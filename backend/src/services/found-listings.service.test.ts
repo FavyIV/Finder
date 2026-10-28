@@ -334,6 +334,22 @@ describe('FoundListingsService', () => {
       }
     });
 
+    it('should reject updating an EXPIRED item (>30 days old) with 409 LISTING_NOT_EDITABLE (Invariant #4)', async () => {
+      await assert.rejects(
+        async () => {
+          await updateFoundListing(testUserId, expiredListingId, {
+            description: 'Attempting to edit an expired listing',
+          });
+        },
+        (error: unknown) => {
+          assert.ok(error instanceof AppError);
+          assert.equal(error.code, 'LISTING_NOT_EDITABLE');
+          assert.equal(error.httpStatus, 409);
+          return true;
+        },
+      );
+    });
+
     it('should throw 404 when attempting to update a non-existent listing', async () => {
       await assert.rejects(
         async () => {
