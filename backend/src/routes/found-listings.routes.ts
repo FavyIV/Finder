@@ -6,6 +6,7 @@ import {
   handleUpdateFoundListing,
   handleClaimFoundListing,
 } from '../controllers/found-listings.controller';
+import { handleCreateReport } from '../controllers/reports.controller';
 import { requireAuth } from '../middleware/require-auth';
 import { requireRole } from '../middleware/require-role';
 import { uploadSinglePhoto } from '../middleware/upload';
@@ -23,3 +24,5 @@ foundListingsRouter.post(
   requireRole(Role.SECURITY, Role.ADMIN),
   handleClaimFoundListing,
 );
+foundListingsRouter.post('/:id/report', requireAuth, handleCreateReport);
+foundListingsRouter.post('/:id/reports', requireAuth, handleCreateReport);

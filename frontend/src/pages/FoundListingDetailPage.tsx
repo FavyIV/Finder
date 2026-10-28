@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { useFoundListing, useClaimFoundListing } from '../hooks/useFoundListings';
 import { useCurrentUser } from '../hooks/useAuth';
 import { StatusBadge } from '../components/StatusBadge';
+import { ReportModal } from '../components/ReportModal';
 
 export function FoundListingDetailPage(): ReactElement {
   const { id } = useParams<{ id: string }>();
@@ -13,6 +14,7 @@ export function FoundListingDetailPage(): ReactElement {
 
   const [isConfirmingClaim, setIsConfirmingClaim] = useState(false);
   const [claimError, setClaimError] = useState<string | null>(null);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -189,18 +191,28 @@ export function FoundListingDetailPage(): ReactElement {
                     </Link>
                   )}
 
-                  {/* Report listing button (Step 8) */}
-                  <Link
-                    to={`/found/${listing.id}/report`}
-                    className="text-xs font-medium text-red-600 hover:text-red-700"
-                  >
-                    🚩 Report this listing
-                  </Link>
+                  {/* Report listing button (Step 8 - Invariant #5: non-owner can flag) */}
+                  {!isOwner && (
+                    <button
+                      type="button"
+                      onClick={() => setIsReportModalOpen(true)}
+                      className="text-xs font-medium text-red-600 hover:text-red-700 focus:outline-none"
+                    >
+                      🚩 Report this listing
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
           </div>
         </div>
+
+        {/* Report Listing Modal */}
+        <ReportModal
+          listingId={listing.id}
+          isOpen={isReportModalOpen}
+          onClose={() => setIsReportModalOpen(false)}
+        />
 
         {/* Claim Confirmation Modal */}
         {isConfirmingClaim && (
