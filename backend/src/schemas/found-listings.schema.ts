@@ -17,3 +17,14 @@ export const createFoundListingSchema = z.object({
 });
 
 export type CreateFoundListingInput = z.infer<typeof createFoundListingSchema>;
+
+export const searchFoundListingsQuerySchema = z.object({
+  category: z.nativeEnum(Category).optional(),
+  locationId: z.string().trim().optional(),
+  foundFrom: z.coerce.date().optional(),
+  foundTo: z.coerce.date().optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(50).default(20),
+});
+
+export type SearchFoundListingsQuery = z.infer<typeof searchFoundListingsQuerySchema>;

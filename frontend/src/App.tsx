@@ -3,6 +3,8 @@ import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { ReportFoundItemPage } from './pages/ReportFoundItemPage';
+import { SearchFoundItemsPage } from './pages/SearchFoundItemsPage';
+import { FoundListingDetailPage } from './pages/FoundListingDetailPage';
 import { useCurrentUser, useLogout } from './hooks/useAuth';
 
 function HomePage(): ReactElement {
@@ -34,8 +36,14 @@ function HomePage(): ReactElement {
 
               <div className="space-y-2">
                 <Link
-                  to="/report-found"
+                  to="/found"
                   className="bg-brand-600 hover:bg-brand-700 focus:ring-brand-500 flex w-full justify-center rounded-md px-4 py-2.5 text-sm font-medium text-white shadow-sm focus:outline-none focus:ring-2"
+                >
+                  🔍 Search Found Items
+                </Link>
+                <Link
+                  to="/report-found"
+                  className="focus:ring-brand-500 flex w-full justify-center rounded-md border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2"
                 >
                   + Report a Found Item
                 </Link>
@@ -78,6 +86,8 @@ export function App(): ReactElement {
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/found" element={<SearchFoundItemsPage />} />
+        <Route path="/found/:id" element={<FoundListingDetailPage />} />
         <Route path="/report-found" element={<ReportFoundItemPage />} />
       </Routes>
     </BrowserRouter>

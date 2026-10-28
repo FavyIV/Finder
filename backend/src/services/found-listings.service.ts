@@ -1,8 +1,13 @@
 import { prisma } from '../lib/prisma';
 import { AppError } from '../errors/app-error';
-import { FoundStatus } from '@prisma/client';
-import type { CreateFoundListingInput } from '../schemas/found-listings.schema';
-import type { Category } from '@prisma/client';
+import { FoundStatus, type Category, type Prisma } from '@prisma/client';
+import { notExpiredWhere, isListingExpired } from './listing-expiry';
+import type {
+  CreateFoundListingInput,
+  SearchFoundListingsQuery,
+} from '../schemas/found-listings.schema';
+
+export type EffectiveFoundStatus = 'AVAILABLE' | 'CLAIMED' | 'EXPIRED';
 
 export type FoundListingDetail = {
   id: string;
@@ -10,7 +15,8 @@ export type FoundListingDetail = {
   category: Category;
   description: string | null;
   foundAt: Date;
-  status: FoundStatus;
+  status: EffectiveFoundStatus;
+  isUnderReview: boolean;
   createdAt: Date;
   location: {
     id: string;
@@ -20,6 +26,16 @@ export type FoundListingDetail = {
   reportedBy: {
     id: string;
     name: string;
+  };
+};
+
+export type SearchFoundListingsResult = {
+  items: FoundListingDetail[];
+  meta: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
   };
 };
 
@@ -77,5 +93,183 @@ export async function createFoundListing(
     },
   });
 
-  return listing;
+  return {
+    ...listing,
+    status: 'AVAILABLE',
+    isUnderReview: false,
+  };
+}
+
+/**
+ * Searches and filters found-item listings.
+ * - Excludes listings that are removed by admin (Invariant #5).
+ * - Automatically excludes listings older than 30 days via notExpiredWhere() (Goal #5).
+ * - Listings under active review remain visible with isUnderReview = true (Invariant #5).
+ * - Supports structured filtering by category, locationId, and foundAt date range (Goal #2).
+ * - Applies standard pagination (max pageSize 50).
+ */
+export async function searchFoundListings(
+  query: SearchFoundListingsQuery,
+): Promise<SearchFoundListingsResult> {
+  const { category, locationId, foundFrom, foundTo, page, pageSize } = query;
+
+  // Build where clause
+  const where: Prisma.FoundListingWhereInput = {
+    removedAt: null,
+    status: FoundStatus.AVAILABLE,
+    ...notExpiredWhere(),
+  };
+
+  if (category) {
+    where.category = category;
+  }
+
+  if (locationId) {
+    where.locationId = locationId;
+  }
+
+  if (foundFrom || foundTo) {
+    where.foundAt = {};
+    if (foundFrom) {
+      where.foundAt.gte = foundFrom;
+    }
+    if (foundTo) {
+      where.foundAt.lte = foundTo;
+    }
+  }
+
+  const skip = (page - 1) * pageSize;
+  const take = pageSize;
+
+  const [total, listings] = await Promise.all([
+    prisma.foundListing.count({ where }),
+    prisma.foundListing.findMany({
+      where,
+      skip,
+      take,
+      orderBy: {
+        createdAt: 'desc',
+      },
+      select: {
+        id: true,
+        photoUrl: true,
+        category: true,
+        description: true,
+        foundAt: true,
+        status: true,
+        createdAt: true,
+        location: {
+          select: {
+            id: true,
+            name: true,
+            isSecurityPost: true,
+          },
+        },
+        reportedBy: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        reports: {
+          where: {
+            status: 'PENDING',
+          },
+          select: {
+            id: true,
+          },
+        },
+      },
+    }),
+  ]);
+
+  const items: FoundListingDetail[] = listings.map((item) => ({
+    id: item.id,
+    photoUrl: item.photoUrl,
+    category: item.category,
+    description: item.description,
+    foundAt: item.foundAt,
+    status: 'AVAILABLE',
+    isUnderReview: item.reports.length > 0,
+    createdAt: item.createdAt,
+    location: item.location,
+    reportedBy: item.reportedBy,
+  }));
+
+  const totalPages = Math.ceil(total / pageSize);
+
+  return {
+    items,
+    meta: {
+      page,
+      pageSize,
+      total,
+      totalPages,
+    },
+  };
+}
+
+/**
+ * Retrieves a single found-item listing by ID.
+ * - Computes read-time expiry: if createdAt > 30 days and status is AVAILABLE, returns EXPIRED.
+ * - Returns isUnderReview: true if an active PENDING report exists.
+ * - Throws 404 if listing does not exist or was removed by admin.
+ */
+export async function getFoundListingById(id: string): Promise<FoundListingDetail> {
+  const listing = await prisma.foundListing.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      photoUrl: true,
+      category: true,
+      description: true,
+      foundAt: true,
+      status: true,
+      removedAt: true,
+      createdAt: true,
+      location: {
+        select: {
+          id: true,
+          name: true,
+          isSecurityPost: true,
+        },
+      },
+      reportedBy: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+      reports: {
+        where: {
+          status: 'PENDING',
+        },
+        select: {
+          id: true,
+        },
+      },
+    },
+  });
+
+  if (!listing || listing.removedAt !== null) {
+    throw new AppError('LISTING_NOT_FOUND', 'Found item listing not found.', 404);
+  }
+
+  let effectiveStatus: EffectiveFoundStatus = listing.status;
+  if (listing.status === FoundStatus.AVAILABLE && isListingExpired(listing.createdAt)) {
+    effectiveStatus = 'EXPIRED';
+  }
+
+  return {
+    id: listing.id,
+    photoUrl: listing.photoUrl,
+    category: listing.category,
+    description: listing.description,
+    foundAt: listing.foundAt,
+    status: effectiveStatus,
+    isUnderReview: listing.reports.length > 0,
+    createdAt: listing.createdAt,
+    location: listing.location,
+    reportedBy: listing.reportedBy,
+  };
 }

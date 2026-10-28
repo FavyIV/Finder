@@ -27,6 +27,7 @@ export type FoundListing = {
   description: string | null;
   foundAt: string;
   status: FoundStatus;
+  isUnderReview: boolean;
   createdAt: string;
   location: {
     id: string;
@@ -37,4 +38,25 @@ export type FoundListing = {
     id: string;
     name: string;
   };
+};
+
+export type PaginationMeta = {
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+};
+
+export type SearchFoundListingsParams = {
+  category?: Category | '';
+  locationId?: string;
+  foundFrom?: string;
+  foundTo?: string;
+  page?: number;
+  pageSize?: number;
+};
+
+export type SearchFoundListingsResponse = {
+  data: FoundListing[];
+  meta: PaginationMeta;
 };

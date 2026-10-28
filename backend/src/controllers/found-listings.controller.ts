@@ -1,5 +1,8 @@
 import type { Request, Response, NextFunction } from 'express';
-import { createFoundListingSchema } from '../schemas/found-listings.schema';
+import {
+  createFoundListingSchema,
+  searchFoundListingsQuerySchema,
+} from '../schemas/found-listings.schema';
 import * as foundListingsService from '../services/found-listings.service';
 import { uploadImage } from '../lib/cloudinary/cloudinary';
 import { AppError } from '../errors/app-error';
@@ -24,6 +27,42 @@ export async function handleCreateFoundListing(
     const listing = await foundListingsService.createFoundListing(req.user.id, input, photoUrl);
 
     res.status(201).json({ data: listing });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function handleSearchFoundListings(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const query = searchFoundListingsQuerySchema.parse(req.query);
+    const result = await foundListingsService.searchFoundListings(query);
+
+    res.status(200).json({
+      data: result.items,
+      meta: result.meta,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function handleGetFoundListingById(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const { id } = req.params;
+    if (!id) {
+      throw new AppError('INVALID_ID', 'Listing ID is required.', 400);
+    }
+
+    const listing = await foundListingsService.getFoundListingById(id);
+    res.status(200).json({ data: listing });
   } catch (error) {
     next(error);
   }

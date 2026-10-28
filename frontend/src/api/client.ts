@@ -71,3 +71,48 @@ export async function apiClient<T>(endpoint: string, options: RequestInit = {}):
 
   return json.data as T;
 }
+
+export type PaginatedResponse<T, M> = {
+  data: T;
+  meta: M;
+};
+
+export async function apiClientWithMeta<T, M>(
+  endpoint: string,
+  options: RequestInit = {},
+): Promise<PaginatedResponse<T, M>> {
+  const url = endpoint.startsWith('/') ? `/api/v1${endpoint}` : `/api/v1/${endpoint}`;
+  const token = getStoredToken();
+
+  const headers: Record<string, string> = {
+    ...(options.headers as Record<string, string>),
+  };
+
+  if (!(options.body instanceof FormData)) {
+    headers['Content-Type'] = 'application/json';
+  }
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const response = await fetch(url, {
+    ...options,
+    headers,
+  });
+
+  const json = (await response.json()) as { data?: T; meta?: M } & Partial<ApiErrorResponse>;
+
+  if (!response.ok || json.error) {
+    const error = json.error ?? {
+      code: 'UNKNOWN_ERROR',
+      message: 'An unexpected error occurred.',
+    };
+    throw new ApiError(error.code, error.message, response.status);
+  }
+
+  return {
+    data: json.data as T,
+    meta: json.meta as M,
+  };
+}
