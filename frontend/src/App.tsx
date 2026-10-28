@@ -6,6 +6,7 @@ import { ReportFoundItemPage } from './pages/ReportFoundItemPage';
 import { SearchFoundItemsPage } from './pages/SearchFoundItemsPage';
 import { FoundListingDetailPage } from './pages/FoundListingDetailPage';
 import { EditFoundListingPage } from './pages/EditFoundListingPage';
+import { AdminModerationPage } from './pages/AdminModerationPage';
 import { useCurrentUser, useLogout } from './hooks/useAuth';
 
 function HomePage(): ReactElement {
@@ -48,6 +49,15 @@ function HomePage(): ReactElement {
                 >
                   + Report a Found Item
                 </Link>
+
+                {user.role === 'ADMIN' && (
+                  <Link
+                    to="/admin/reports"
+                    className="flex w-full justify-center rounded-md border border-purple-300 bg-purple-50 px-4 py-2.5 text-sm font-medium text-purple-800 hover:bg-purple-100 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  >
+                    🛡️ Admin Moderation Queue
+                  </Link>
+                )}
               </div>
 
               <button
@@ -91,6 +101,7 @@ export function App(): ReactElement {
         <Route path="/found/:id" element={<FoundListingDetailPage />} />
         <Route path="/found/:id/edit" element={<EditFoundListingPage />} />
         <Route path="/report-found" element={<ReportFoundItemPage />} />
+        <Route path="/admin/reports" element={<AdminModerationPage />} />
       </Routes>
     </BrowserRouter>
   );
