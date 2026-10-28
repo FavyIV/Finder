@@ -7,6 +7,9 @@ import { SearchFoundItemsPage } from './pages/SearchFoundItemsPage';
 import { FoundListingDetailPage } from './pages/FoundListingDetailPage';
 import { EditFoundListingPage } from './pages/EditFoundListingPage';
 import { AdminModerationPage } from './pages/AdminModerationPage';
+import { SearchLostItemsPage } from './pages/SearchLostItemsPage';
+import { ReportLostItemPage } from './pages/ReportLostItemPage';
+import { EditLostListingPage } from './pages/EditLostListingPage';
 import { useCurrentUser, useLogout } from './hooks/useAuth';
 
 function HomePage(): ReactElement {
@@ -37,23 +40,40 @@ function HomePage(): ReactElement {
               </div>
 
               <div className="space-y-2">
-                <Link
-                  to="/found"
-                  className="bg-brand-600 hover:bg-brand-700 focus:ring-brand-500 flex w-full justify-center rounded-md px-4 py-2.5 text-sm font-medium text-white shadow-sm focus:outline-none focus:ring-2"
-                >
-                  🔍 Search Found Items
-                </Link>
-                <Link
-                  to="/report-found"
-                  className="focus:ring-brand-500 flex w-full justify-center rounded-md border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2"
-                >
-                  + Report a Found Item
-                </Link>
+                <div className="grid grid-cols-2 gap-2">
+                  <Link
+                    to="/found"
+                    className="bg-brand-600 hover:bg-brand-700 focus:ring-brand-500 flex justify-center rounded-md px-3 py-2 text-xs font-semibold text-white shadow-sm focus:outline-none focus:ring-2"
+                  >
+                    🔍 Found Items
+                  </Link>
+                  <Link
+                    to="/lost"
+                    className="bg-brand-600 hover:bg-brand-700 focus:ring-brand-500 flex justify-center rounded-md px-3 py-2 text-xs font-semibold text-white shadow-sm focus:outline-none focus:ring-2"
+                  >
+                    📋 Lost Notices
+                  </Link>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <Link
+                    to="/report-found"
+                    className="focus:ring-brand-500 flex justify-center rounded-md border border-gray-300 bg-white px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2"
+                  >
+                    + Report Found
+                  </Link>
+                  <Link
+                    to="/report-lost"
+                    className="focus:ring-brand-500 flex justify-center rounded-md border border-gray-300 bg-white px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2"
+                  >
+                    + Post Lost
+                  </Link>
+                </div>
 
                 {user.role === 'ADMIN' && (
                   <Link
                     to="/admin/reports"
-                    className="flex w-full justify-center rounded-md border border-purple-300 bg-purple-50 px-4 py-2.5 text-sm font-medium text-purple-800 hover:bg-purple-100 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="flex w-full justify-center rounded-md border border-purple-300 bg-purple-50 px-4 py-2 text-xs font-semibold text-purple-800 hover:bg-purple-100 focus:outline-none focus:ring-2 focus:ring-purple-500"
                   >
                     🛡️ Admin Moderation Queue
                   </Link>
@@ -101,6 +121,9 @@ export function App(): ReactElement {
         <Route path="/found/:id" element={<FoundListingDetailPage />} />
         <Route path="/found/:id/edit" element={<EditFoundListingPage />} />
         <Route path="/report-found" element={<ReportFoundItemPage />} />
+        <Route path="/lost" element={<SearchLostItemsPage />} />
+        <Route path="/report-lost" element={<ReportLostItemPage />} />
+        <Route path="/lost/:id/edit" element={<EditLostListingPage />} />
         <Route path="/admin/reports" element={<AdminModerationPage />} />
       </Routes>
     </BrowserRouter>

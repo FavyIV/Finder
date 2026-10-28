@@ -8,6 +8,7 @@ import { authRouter } from './routes/auth.routes';
 import { locationsRouter } from './routes/locations.routes';
 import { foundListingsRouter } from './routes/found-listings.routes';
 import { adminReportsRouter } from './routes/admin-reports.routes';
+import { lostListingsRouter } from './routes/lost-listings.routes';
 
 /**
  * Builds and returns the configured Express application.
@@ -45,6 +46,9 @@ export function createApp(): express.Application {
 
   // Step 9 → Admin moderation queue
   app.use('/api/v1/admin/reports', adminReportsRouter);
+
+  // Step 10 → Lost listings
+  app.use('/api/v1/lost-listings', lostListingsRouter);
 
   // Error handler must be the last middleware
   app.use(errorHandler);

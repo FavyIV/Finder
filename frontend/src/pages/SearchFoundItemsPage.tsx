@@ -65,6 +65,21 @@ export function SearchFoundItemsPage(): ReactElement {
           </div>
         </div>
 
+        {/* Directory Switcher Tabs */}
+        <div className="mb-6 border-b border-gray-200">
+          <nav className="-mb-px flex space-x-6">
+            <span className="border-brand-600 text-brand-600 border-b-2 pb-3 text-xs font-semibold uppercase tracking-wider">
+              Found Items Directory
+            </span>
+            <Link
+              to="/lost"
+              className="border-b-2 border-transparent pb-3 text-xs font-semibold uppercase tracking-wider text-gray-500 hover:border-gray-300 hover:text-gray-700"
+            >
+              Lost Items Notices
+            </Link>
+          </nav>
+        </div>
+
         {/* Structured Filter Bar */}
         <div className="mb-8">
           <FilterBar
@@ -147,7 +162,7 @@ export function SearchFoundItemsPage(): ReactElement {
                 Clear Filters
               </button>
               <Link
-                to="/lost-listings"
+                to="/report-lost"
                 className="bg-brand-600 hover:bg-brand-700 rounded-md px-4 py-2 text-sm font-medium text-white"
               >
                 Post a Lost Item
