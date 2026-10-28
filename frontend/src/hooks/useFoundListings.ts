@@ -10,6 +10,7 @@ import {
   searchFoundListingsApi,
   getFoundListingByIdApi,
   updateFoundListingApi,
+  claimFoundListingApi,
 } from '../api/found-listings.api';
 import type {
   FoundListing,
@@ -58,6 +59,18 @@ export function useUpdateFoundListing(
     mutationFn: (formData: FormData) => updateFoundListingApi(id, formData),
     onSuccess: (updated) => {
       // Invalidate detail query and list query
+      queryClient.setQueryData([...FOUND_LISTINGS_QUERY_KEY, id], updated);
+      void queryClient.invalidateQueries({ queryKey: FOUND_LISTINGS_QUERY_KEY });
+    },
+  });
+}
+
+export function useClaimFoundListing(id: string): UseMutationResult<FoundListing, ApiError, void> {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => claimFoundListingApi(id),
+    onSuccess: (updated) => {
       queryClient.setQueryData([...FOUND_LISTINGS_QUERY_KEY, id], updated);
       void queryClient.invalidateQueries({ queryKey: FOUND_LISTINGS_QUERY_KEY });
     },

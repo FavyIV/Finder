@@ -5,6 +5,7 @@ import {
   searchFoundListings,
   getFoundListingById,
   updateFoundListing,
+  claimFoundListing,
 } from './found-listings.service';
 import { prisma } from '../lib/prisma';
 import { AppError } from '../errors/app-error';
@@ -337,6 +338,87 @@ describe('FoundListingsService', () => {
       await assert.rejects(
         async () => {
           await updateFoundListing(testUserId, 'non-existent-id', { description: 'Test' });
+        },
+        (error: unknown) => {
+          assert.ok(error instanceof AppError);
+          assert.equal(error.code, 'LISTING_NOT_FOUND');
+          assert.equal(error.httpStatus, 404);
+          return true;
+        },
+      );
+    });
+  });
+
+  describe('claimFoundListing', () => {
+    let claimableListingId: string;
+
+    before(async () => {
+      const claimable = await prisma.foundListing.create({
+        data: {
+          photoUrl: 'https://res.cloudinary.com/demo/image/upload/claimable.jpg',
+          category: Category.ELECTRONICS,
+          locationId: testLocationId,
+          foundAt: new Date(),
+          description: 'Headphones to be claimed',
+          reportedById: testUserId,
+          status: FoundStatus.AVAILABLE,
+        },
+      });
+      claimableListingId = claimable.id;
+    });
+
+    after(async () => {
+      if (claimableListingId) {
+        await prisma.foundListing.delete({ where: { id: claimableListingId } }).catch(() => {});
+      }
+    });
+
+    it('should mark an AVAILABLE item as CLAIMED and record claimedBy and claimedAt', async () => {
+      const result = await claimFoundListing(testUserId, claimableListingId);
+
+      assert.equal(result.id, claimableListingId);
+      assert.equal(result.status, 'CLAIMED');
+
+      const dbListing = await prisma.foundListing.findUnique({
+        where: { id: claimableListingId },
+      });
+      assert.equal(dbListing?.status, FoundStatus.CLAIMED);
+      assert.equal(dbListing?.claimedById, testUserId);
+      assert.ok(dbListing?.claimedAt instanceof Date);
+    });
+
+    it('should reject claim on an already CLAIMED item with 409 ALREADY_CLAIMED', async () => {
+      await assert.rejects(
+        async () => {
+          await claimFoundListing(testUserId, claimableListingId);
+        },
+        (error: unknown) => {
+          assert.ok(error instanceof AppError);
+          assert.equal(error.code, 'ALREADY_CLAIMED');
+          assert.equal(error.httpStatus, 409);
+          return true;
+        },
+      );
+    });
+
+    it('should reject claim on an EXPIRED item with 409 LISTING_EXPIRED', async () => {
+      await assert.rejects(
+        async () => {
+          await claimFoundListing(testUserId, expiredListingId);
+        },
+        (error: unknown) => {
+          assert.ok(error instanceof AppError);
+          assert.equal(error.code, 'LISTING_EXPIRED');
+          assert.equal(error.httpStatus, 409);
+          return true;
+        },
+      );
+    });
+
+    it('should throw 404 when claiming a non-existent listing', async () => {
+      await assert.rejects(
+        async () => {
+          await claimFoundListing(testUserId, 'non-existent-id');
         },
         (error: unknown) => {
           assert.ok(error instanceof AppError);

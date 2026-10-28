@@ -1,13 +1,18 @@
-import type { ReactElement } from 'react';
+import { useState, type ReactElement } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { useFoundListing } from '../hooks/useFoundListings';
+import { useFoundListing, useClaimFoundListing } from '../hooks/useFoundListings';
 import { useCurrentUser } from '../hooks/useAuth';
 import { StatusBadge } from '../components/StatusBadge';
 
 export function FoundListingDetailPage(): ReactElement {
   const { id } = useParams<{ id: string }>();
-  const { data: listing, isLoading, error } = useFoundListing(id ?? '');
+  const listingId = id ?? '';
+  const { data: listing, isLoading, error } = useFoundListing(listingId);
   const { data: currentUser } = useCurrentUser();
+  const claimMutation = useClaimFoundListing(listingId);
+
+  const [isConfirmingClaim, setIsConfirmingClaim] = useState(false);
+  const [claimError, setClaimError] = useState<string | null>(null);
 
   if (isLoading) {
     return (
@@ -45,6 +50,20 @@ export function FoundListingDetailPage(): ReactElement {
 
   const isOwner = currentUser?.id === listing.reportedBy.id;
   const isSecurityOrAdmin = currentUser?.role === 'SECURITY' || currentUser?.role === 'ADMIN';
+
+  const handleExecuteClaim = async (): Promise<void> => {
+    setClaimError(null);
+    try {
+      await claimMutation.mutateAsync();
+      setIsConfirmingClaim(false);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setClaimError(err.message);
+      } else {
+        setClaimError('Failed to record item claim.');
+      }
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-8 sm:px-6 lg:px-8">
@@ -102,18 +121,59 @@ export function FoundListingDetailPage(): ReactElement {
                   </div>
                 </div>
 
-                {/* How to Claim In Person */}
-                <div className="rounded-md bg-gray-50 p-4 text-xs text-gray-600">
-                  <p className="font-semibold text-gray-800">Is this your item?</p>
-                  <ol className="mt-1.5 list-inside list-decimal space-y-1">
-                    <li>Visit the security post listed above in person.</li>
-                    <li>Present your valid school ID card.</li>
-                    <li>
-                      Accurately describe identifying features to the security officer on duty.
-                    </li>
-                    <li>Security will confirm ownership and record the claim.</li>
-                  </ol>
-                </div>
+                {/* Claim instructions or Claimed status banner */}
+                {listing.status === 'CLAIMED' ? (
+                  <div className="rounded-md border border-green-200 bg-green-50 p-4 text-xs text-green-800">
+                    <p className="text-sm font-semibold">✓ Item Handed Over &amp; Claimed</p>
+                    <p className="mt-1">
+                      This item has been successfully claimed by its verified owner at the security
+                      desk and is no longer available.
+                    </p>
+                  </div>
+                ) : listing.status === 'EXPIRED' ? (
+                  <div className="rounded-md border border-amber-200 bg-amber-50 p-4 text-xs text-amber-800">
+                    <p className="text-sm font-semibold">⌛ Listing Expired</p>
+                    <p className="mt-1">
+                      This item has been stored for over 30 days without being claimed and is
+                      archived.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="rounded-md bg-gray-50 p-4 text-xs text-gray-600">
+                    <p className="font-semibold text-gray-800">Is this your item?</p>
+                    <ol className="mt-1.5 list-inside list-decimal space-y-1">
+                      <li>Visit the security post listed above in person.</li>
+                      <li>Present your valid school ID card.</li>
+                      <li>
+                        Accurately describe identifying features to the security officer on duty.
+                      </li>
+                      <li>Security will confirm ownership and record the claim.</li>
+                    </ol>
+                  </div>
+                )}
+
+                {/* Security Verification Action Box */}
+                {isSecurityOrAdmin && listing.status === 'AVAILABLE' && (
+                  <div className="border-brand-200 bg-brand-50/50 rounded-md border p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-brand-900 text-xs font-semibold">
+                          🛡️ Security Verification Desk
+                        </p>
+                        <p className="mt-0.5 text-xs text-gray-600">
+                          Owner present at post with verified school ID?
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setIsConfirmingClaim(true)}
+                        className="rounded-md bg-green-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+                      >
+                        Mark as Claimed
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Action Buttons for Roles & Moderation */}
@@ -129,13 +189,6 @@ export function FoundListingDetailPage(): ReactElement {
                     </Link>
                   )}
 
-                  {/* Security claim trigger (Step 7) */}
-                  {isSecurityOrAdmin && listing.status === 'AVAILABLE' && (
-                    <span className="text-xs font-medium text-green-700">
-                      🛡️ Security action enabled
-                    </span>
-                  )}
-
                   {/* Report listing button (Step 8) */}
                   <Link
                     to={`/found/${listing.id}/report`}
@@ -148,6 +201,56 @@ export function FoundListingDetailPage(): ReactElement {
             </div>
           </div>
         </div>
+
+        {/* Claim Confirmation Modal */}
+        {isConfirmingClaim && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <div className="w-full max-w-md rounded-lg border border-gray-200 bg-white p-6 shadow-xl">
+              <h3 className="text-lg font-bold text-gray-900">Confirm Handover &amp; Item Claim</h3>
+              <p className="mt-2 text-xs text-gray-600">
+                You are about to mark this item as claimed in the campus records. Please confirm all
+                in-person security checks have been performed:
+              </p>
+
+              <ul className="mt-3 list-inside list-disc space-y-1 rounded-md bg-gray-50 p-3 text-xs text-gray-700">
+                <li>Claimant's physical Student/Staff ID has been verified.</li>
+                <li>Claimant has accurately described identifying features or passcode.</li>
+                <li>Item has been handed over physically to the verified owner.</li>
+              </ul>
+
+              {claimError && (
+                <div
+                  role="alert"
+                  className="mt-3 rounded-md border border-red-200 bg-red-50 p-3 text-xs text-red-700"
+                >
+                  {claimError}
+                </div>
+              )}
+
+              <div className="mt-6 flex justify-end gap-3">
+                <button
+                  type="button"
+                  disabled={claimMutation.isPending}
+                  onClick={() => {
+                    setIsConfirmingClaim(false);
+                    setClaimError(null);
+                  }}
+                  className="rounded-md border border-gray-300 bg-white px-4 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={claimMutation.isPending}
+                  onClick={handleExecuteClaim}
+                  className="rounded-md bg-green-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50"
+                >
+                  {claimMutation.isPending ? 'Recording claim...' : 'Confirm Handover'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

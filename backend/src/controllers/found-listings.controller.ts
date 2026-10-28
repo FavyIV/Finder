@@ -98,3 +98,25 @@ export async function handleUpdateFoundListing(
     next(error);
   }
 }
+
+export async function handleClaimFoundListing(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    if (!req.user) {
+      throw new AppError('UNAUTHORIZED', 'Authentication is required.', 401);
+    }
+
+    const { id } = req.params;
+    if (!id) {
+      throw new AppError('INVALID_ID', 'Listing ID is required.', 400);
+    }
+
+    const claimed = await foundListingsService.claimFoundListing(req.user.id, id);
+    res.status(200).json({ data: claimed });
+  } catch (error) {
+    next(error);
+  }
+}

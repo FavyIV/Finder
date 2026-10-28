@@ -4,9 +4,12 @@ import {
   handleSearchFoundListings,
   handleGetFoundListingById,
   handleUpdateFoundListing,
+  handleClaimFoundListing,
 } from '../controllers/found-listings.controller';
 import { requireAuth } from '../middleware/require-auth';
+import { requireRole } from '../middleware/require-role';
 import { uploadSinglePhoto } from '../middleware/upload';
+import { Role } from '@prisma/client';
 
 export const foundListingsRouter: Router = Router();
 
@@ -14,3 +17,9 @@ foundListingsRouter.get('/', requireAuth, handleSearchFoundListings);
 foundListingsRouter.get('/:id', requireAuth, handleGetFoundListingById);
 foundListingsRouter.post('/', requireAuth, uploadSinglePhoto, handleCreateFoundListing);
 foundListingsRouter.patch('/:id', requireAuth, uploadSinglePhoto, handleUpdateFoundListing);
+foundListingsRouter.post(
+  '/:id/claim',
+  requireAuth,
+  requireRole(Role.SECURITY, Role.ADMIN),
+  handleClaimFoundListing,
+);

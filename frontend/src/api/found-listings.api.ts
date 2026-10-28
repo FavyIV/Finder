@@ -56,3 +56,9 @@ export async function updateFoundListingApi(id: string, formData: FormData): Pro
     body: formData,
   });
 }
+
+export async function claimFoundListingApi(id: string): Promise<FoundListing> {
+  return apiClient<FoundListing>(`/found-listings/${id}/claim`, {
+    method: 'POST',
+  });
+}

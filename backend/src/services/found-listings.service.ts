@@ -374,3 +374,82 @@ export async function updateFoundListing(
     isUnderReview: listing.reports.length > 0,
   };
 }
+
+/**
+ * Marks a found listing as CLAIMED by a staff member (SECURITY or ADMIN).
+ * - Enforces state transitions: only AVAILABLE items can be claimed.
+ * - Rejects already CLAIMED items (409 ALREADY_CLAIMED).
+ * - Rejects EXPIRED items (409 LISTING_EXPIRED).
+ * - Records claimedById and claimedAt (Invariants #3, #7).
+ */
+export async function claimFoundListing(
+  staffUserId: string,
+  listingId: string,
+): Promise<FoundListingDetail> {
+  const listing = await prisma.foundListing.findUnique({
+    where: { id: listingId },
+    select: {
+      id: true,
+      status: true,
+      createdAt: true,
+      removedAt: true,
+      reports: {
+        where: {
+          status: 'PENDING',
+        },
+        select: {
+          id: true,
+        },
+      },
+    },
+  });
+
+  if (!listing || listing.removedAt !== null) {
+    throw new AppError('LISTING_NOT_FOUND', 'Found item listing not found.', 404);
+  }
+
+  if (listing.status === FoundStatus.CLAIMED) {
+    throw new AppError('ALREADY_CLAIMED', 'This item has already been marked as claimed.', 409);
+  }
+
+  if (isListingExpired(listing.createdAt)) {
+    throw new AppError('LISTING_EXPIRED', 'Expired listings cannot be marked as claimed.', 409);
+  }
+
+  const updated = await prisma.foundListing.update({
+    where: { id: listingId },
+    data: {
+      status: FoundStatus.CLAIMED,
+      claimedById: staffUserId,
+      claimedAt: new Date(),
+    },
+    select: {
+      id: true,
+      photoUrl: true,
+      category: true,
+      description: true,
+      foundAt: true,
+      status: true,
+      createdAt: true,
+      location: {
+        select: {
+          id: true,
+          name: true,
+          isSecurityPost: true,
+        },
+      },
+      reportedBy: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+    },
+  });
+
+  return {
+    ...updated,
+    status: 'CLAIMED',
+    isUnderReview: listing.reports.length > 0,
+  };
+}
