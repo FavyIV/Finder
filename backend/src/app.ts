@@ -5,6 +5,8 @@ import { env } from './config/env';
 import { errorHandler } from './middleware/error-handler';
 
 import { authRouter } from './routes/auth.routes';
+import { locationsRouter } from './routes/locations.routes';
+import { foundListingsRouter } from './routes/found-listings.routes';
 
 /**
  * Builds and returns the configured Express application.
@@ -35,6 +37,10 @@ export function createApp(): express.Application {
   // Feature routes:
   // Step 3 → Auth routes
   app.use('/api/v1/auth', authRouter);
+
+  // Step 4 → Locations & Found listings create
+  app.use('/api/v1/locations', locationsRouter);
+  app.use('/api/v1/found-listings', foundListingsRouter);
 
   // Error handler must be the last middleware
   app.use(errorHandler);
