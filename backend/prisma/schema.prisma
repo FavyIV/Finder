@@ -1,0 +1,146 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum Role {
+  USER
+  SECURITY
+  ADMIN
+}
+
+/// Item categories available across both found and lost listings.
+enum Category {
+  ELECTRONICS
+  CLOTHING
+  ACCESSORIES
+  BOOKS
+  DOCUMENTS
+  KEYS
+  BAGS
+  OTHER
+}
+
+/// Stored status for a FoundListing. EXPIRED is not stored — it is computed
+/// at read time by the service layer when createdAt exceeds LISTING_EXPIRY_DAYS.
+enum FoundStatus {
+  AVAILABLE
+  CLAIMED
+}
+
+enum ReportStatus {
+  PENDING
+  DISMISSED
+  REMOVED
+}
+
+// ---------------------------------------------------------------------------
+// Models
+// ---------------------------------------------------------------------------
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         Role     @default(USER)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  foundListings   FoundListing[] @relation("ReportedBy")
+  claimedListings FoundListing[] @relation("ClaimedBy")
+  lostListings    LostListing[]
+  reportsMade     Report[]       @relation("ReportedByUser")
+  reportsReviewed Report[]       @relation("ReviewedByUser")
+}
+
+/// Predefined campus drop-off / security post locations.
+/// Populated by prisma/seed.ts — never hardcoded in application logic.
+model Location {
+  id             String   @id @default(cuid())
+  name           String   @unique
+  isSecurityPost Boolean  @default(true)
+  createdAt      DateTime @default(now())
+
+  foundListings FoundListing[]
+}
+
+model FoundListing {
+  id          String      @id @default(cuid())
+  photoUrl    String
+  category    Category
+  description String?
+  foundAt     DateTime
+  status      FoundStatus @default(AVAILABLE)
+  /// Set by admin via Report resolution (REMOVED). Listing is excluded from
+  /// all search results once removedAt is non-null (invariant #5).
+  removedAt   DateTime?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  reportedById String
+  reportedBy   User     @relation("ReportedBy", fields: [reportedById], references: [id])
+
+  locationId String
+  location   Location @relation(fields: [locationId], references: [id])
+
+  /// The SECURITY/ADMIN user who processed the in-person claim.
+  claimedById String?
+  claimedBy   User?    @relation("ClaimedBy", fields: [claimedById], references: [id])
+  claimedAt   DateTime?
+
+  reports Report[]
+
+  @@index([status])
+  @@index([category])
+  @@index([locationId])
+  @@index([createdAt])
+  @@index([reportedById])
+}
+
+model LostListing {
+  id          String   @id @default(cuid())
+  category    Category
+  description String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  postedById String
+  postedBy   User   @relation(fields: [postedById], references: [id])
+
+  @@index([postedById])
+  @@index([category])
+}
+
+model Report {
+  id         String       @id @default(cuid())
+  status     ReportStatus @default(PENDING)
+  /// Optional free-text reason supplied by the reporting user.
+  reason     String?
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  reportedById String
+  reportedBy   User   @relation("ReportedByUser", fields: [reportedById], references: [id])
+
+  /// The ADMIN who reviewed this report.
+  reviewedById String?
+  reviewedBy   User?    @relation("ReviewedByUser", fields: [reviewedById], references: [id])
+  reviewedAt   DateTime?
+
+  foundListingId String
+  foundListing   FoundListing @relation(fields: [foundListingId], references: [id])
+
+  /// One report per user per listing — prevents duplicate reports.
+  @@unique([reportedById, foundListingId])
+  @@index([status])
+  @@index([foundListingId])
+}
