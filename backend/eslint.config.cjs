@@ -2,7 +2,7 @@
 const tseslint = require('typescript-eslint');
 
 module.exports = tseslint.config(
-  { ignores: ['dist', 'node_modules', 'prisma/migrations'] },
+  { ignores: ['dist', 'node_modules', 'prisma/migrations', 'eslint.config.cjs'] },
   ...tseslint.configs.recommended,
   ...tseslint.configs.strict,
   {
@@ -11,6 +11,10 @@ module.exports = tseslint.config(
       '@typescript-eslint/explicit-function-return-type': [
         'error',
         { allowExpressions: true, allowHigherOrderFunctions: true },
+      ],
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
       ],
     },
   },

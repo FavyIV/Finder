@@ -16,6 +16,10 @@ export default tseslint.config(
         'error',
         { allowExpressions: true, allowHigherOrderFunctions: true },
       ],
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+      ],
     },
   },
 );
