@@ -28,3 +28,17 @@ export const searchFoundListingsQuerySchema = z.object({
 });
 
 export type SearchFoundListingsQuery = z.infer<typeof searchFoundListingsQuerySchema>;
+
+export const updateFoundListingSchema = z.object({
+  category: z.nativeEnum(Category).optional(),
+  locationId: z.string().trim().min(1).optional(),
+  foundAt: z.coerce
+    .date()
+    .refine((date) => date <= new Date(), {
+      message: 'Date and time found cannot be in the future',
+    })
+    .optional(),
+  description: z.string().trim().max(1000).optional().nullable(),
+});
+
+export type UpdateFoundListingInput = z.infer<typeof updateFoundListingSchema>;

@@ -5,6 +5,7 @@ import { notExpiredWhere, isListingExpired } from './listing-expiry';
 import type {
   CreateFoundListingInput,
   SearchFoundListingsQuery,
+  UpdateFoundListingInput,
 } from '../schemas/found-listings.schema';
 
 export type EffectiveFoundStatus = 'AVAILABLE' | 'CLAIMED' | 'EXPIRED';
@@ -271,5 +272,105 @@ export async function getFoundListingById(id: string): Promise<FoundListingDetai
     createdAt: listing.createdAt,
     location: listing.location,
     reportedBy: listing.reportedBy,
+  };
+}
+
+/**
+ * Updates a found listing (owner-only, while status is AVAILABLE).
+ * - Enforces ownership (Invariant #4).
+ * - Blocks edits if listing is CLAIMED or EXPIRED (Invariant #4).
+ * - Preserves PENDING report status if the listing was under review (decision recorded in spec).
+ * - Validates locationId if updated.
+ */
+export async function updateFoundListing(
+  userId: string,
+  listingId: string,
+  input: UpdateFoundListingInput,
+  photoUrl?: string,
+): Promise<FoundListingDetail> {
+  const listing = await prisma.foundListing.findUnique({
+    where: { id: listingId },
+    select: {
+      id: true,
+      status: true,
+      createdAt: true,
+      removedAt: true,
+      reportedById: true,
+      reports: {
+        where: {
+          status: 'PENDING',
+        },
+        select: {
+          id: true,
+        },
+      },
+    },
+  });
+
+  if (!listing || listing.removedAt !== null) {
+    throw new AppError('LISTING_NOT_FOUND', 'Found item listing not found.', 404);
+  }
+
+  // Enforce ownership: only the user who reported the item may edit it
+  if (listing.reportedById !== userId) {
+    throw new AppError('NOT_LISTING_OWNER', 'You can only edit listings you reported.', 403);
+  }
+
+  // Enforce status constraint: can only edit while AVAILABLE and not expired
+  if (listing.status !== FoundStatus.AVAILABLE || isListingExpired(listing.createdAt)) {
+    throw new AppError(
+      'LISTING_NOT_EDITABLE',
+      'Listings that are claimed or expired cannot be edited.',
+      409,
+    );
+  }
+
+  // If location is being updated, verify it exists
+  if (input.locationId) {
+    const location = await prisma.location.findUnique({
+      where: { id: input.locationId },
+    });
+    if (!location) {
+      throw new AppError('LOCATION_NOT_FOUND', 'Selected drop-off location does not exist.', 404);
+    }
+  }
+
+  const updated = await prisma.foundListing.update({
+    where: { id: listingId },
+    data: {
+      category: input.category,
+      locationId: input.locationId,
+      foundAt: input.foundAt,
+      description: input.description,
+      ...(photoUrl ? { photoUrl } : {}),
+    },
+    select: {
+      id: true,
+      photoUrl: true,
+      category: true,
+      description: true,
+      foundAt: true,
+      status: true,
+      createdAt: true,
+      location: {
+        select: {
+          id: true,
+          name: true,
+          isSecurityPost: true,
+        },
+      },
+      reportedBy: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+    },
+  });
+
+  return {
+    ...updated,
+    status: 'AVAILABLE',
+    isUnderReview: listing.reports.length > 0,
   };
 }

@@ -2,6 +2,7 @@ import type { Request, Response, NextFunction } from 'express';
 import {
   createFoundListingSchema,
   searchFoundListingsQuerySchema,
+  updateFoundListingSchema,
 } from '../schemas/found-listings.schema';
 import * as foundListingsService from '../services/found-listings.service';
 import { uploadImage } from '../lib/cloudinary/cloudinary';
@@ -63,6 +64,36 @@ export async function handleGetFoundListingById(
 
     const listing = await foundListingsService.getFoundListingById(id);
     res.status(200).json({ data: listing });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function handleUpdateFoundListing(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    if (!req.user) {
+      throw new AppError('UNAUTHORIZED', 'Authentication is required.', 401);
+    }
+
+    const { id } = req.params;
+    if (!id) {
+      throw new AppError('INVALID_ID', 'Listing ID is required.', 400);
+    }
+
+    const input = updateFoundListingSchema.parse(req.body);
+
+    let photoUrl: string | undefined;
+    if (req.file) {
+      photoUrl = await uploadImage(req.file.buffer);
+    }
+
+    const updated = await foundListingsService.updateFoundListing(req.user.id, id, input, photoUrl);
+
+    res.status(200).json({ data: updated });
   } catch (error) {
     next(error);
   }

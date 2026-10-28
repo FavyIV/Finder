@@ -11,12 +11,10 @@ describe('AuthService', () => {
   let createdUserId: string;
 
   after(async () => {
-    // Clean up test users
+    // Clean up test user
     await prisma.user.deleteMany({
       where: {
-        email: {
-          contains: '@futa.edu.ng',
-        },
+        email: testEmail,
       },
     });
   });

@@ -49,3 +49,10 @@ export async function getFoundListingByIdApi(id: string): Promise<FoundListing> 
     method: 'GET',
   });
 }
+
+export async function updateFoundListingApi(id: string, formData: FormData): Promise<FoundListing> {
+  return apiClient<FoundListing>(`/found-listings/${id}`, {
+    method: 'PATCH',
+    body: formData,
+  });
+}

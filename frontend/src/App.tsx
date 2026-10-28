@@ -5,6 +5,7 @@ import { RegisterPage } from './pages/RegisterPage';
 import { ReportFoundItemPage } from './pages/ReportFoundItemPage';
 import { SearchFoundItemsPage } from './pages/SearchFoundItemsPage';
 import { FoundListingDetailPage } from './pages/FoundListingDetailPage';
+import { EditFoundListingPage } from './pages/EditFoundListingPage';
 import { useCurrentUser, useLogout } from './hooks/useAuth';
 
 function HomePage(): ReactElement {
@@ -88,6 +89,7 @@ export function App(): ReactElement {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/found" element={<SearchFoundItemsPage />} />
         <Route path="/found/:id" element={<FoundListingDetailPage />} />
+        <Route path="/found/:id/edit" element={<EditFoundListingPage />} />
         <Route path="/report-found" element={<ReportFoundItemPage />} />
       </Routes>
     </BrowserRouter>

@@ -4,6 +4,7 @@ import {
   createFoundListing,
   searchFoundListings,
   getFoundListingById,
+  updateFoundListing,
 } from './found-listings.service';
 import { prisma } from '../lib/prisma';
 import { AppError } from '../errors/app-error';
@@ -242,6 +243,100 @@ describe('FoundListingsService', () => {
       await assert.rejects(
         async () => {
           await getFoundListingById('non-existent-id');
+        },
+        (error: unknown) => {
+          assert.ok(error instanceof AppError);
+          assert.equal(error.code, 'LISTING_NOT_FOUND');
+          assert.equal(error.httpStatus, 404);
+          return true;
+        },
+      );
+    });
+  });
+
+  describe('updateFoundListing', () => {
+    it('should allow owner to update an AVAILABLE listing', async () => {
+      const updated = await updateFoundListing(testUserId, activeListingId, {
+        description: 'Updated description for active car keys',
+        category: Category.KEYS,
+      });
+
+      assert.equal(updated.id, activeListingId);
+      assert.equal(updated.description, 'Updated description for active car keys');
+      assert.equal(updated.status, 'AVAILABLE');
+
+      const dbListing = await prisma.foundListing.findUnique({
+        where: { id: activeListingId },
+      });
+      assert.equal(dbListing?.description, 'Updated description for active car keys');
+    });
+
+    it('should reject edit by a user who is not the owner with 403 NOT_LISTING_OWNER', async () => {
+      await assert.rejects(
+        async () => {
+          await updateFoundListing('different-user-id', activeListingId, {
+            description: 'Hacked description',
+          });
+        },
+        (error: unknown) => {
+          assert.ok(error instanceof AppError);
+          assert.equal(error.code, 'NOT_LISTING_OWNER');
+          assert.equal(error.httpStatus, 403);
+          return true;
+        },
+      );
+    });
+
+    it('should reject edit on an EXPIRED listing with 409 LISTING_NOT_EDITABLE', async () => {
+      await assert.rejects(
+        async () => {
+          await updateFoundListing(testUserId, expiredListingId, {
+            description: 'Attempting to edit expired item',
+          });
+        },
+        (error: unknown) => {
+          assert.ok(error instanceof AppError);
+          assert.equal(error.code, 'LISTING_NOT_EDITABLE');
+          assert.equal(error.httpStatus, 409);
+          return true;
+        },
+      );
+    });
+
+    it('should reject edit on a CLAIMED listing with 409 LISTING_NOT_EDITABLE', async () => {
+      // Temporarily mark activeListing as CLAIMED
+      await prisma.foundListing.update({
+        where: { id: activeListingId },
+        data: { status: FoundStatus.CLAIMED },
+      });
+
+      try {
+        await assert.rejects(
+          async () => {
+            await updateFoundListing(testUserId, activeListingId, {
+              description: 'Attempting to edit claimed item',
+            });
+          },
+          (error: unknown) => {
+            assert.ok(error instanceof AppError);
+            assert.equal(error.code, 'LISTING_NOT_EDITABLE');
+            assert.equal(error.httpStatus, 409);
+            return true;
+          },
+        );
+      } finally {
+        // Revert status to AVAILABLE
+        await prisma.foundListing.update({
+          where: { id: activeListingId },
+          data: { status: FoundStatus.AVAILABLE },
+        });
+      }
+    });
+
+    it('should throw 404 when attempting to update a non-existent listing', async () => {
+      await assert.rejects(
+        async () => {
+          await updateFoundListing(testUserId, 'non-existent-id', { description: 'Test' });
         },
         (error: unknown) => {
           assert.ok(error instanceof AppError);
