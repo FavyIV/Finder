@@ -9,6 +9,7 @@
     "type-check": "tsc --noEmit",
     "lint": "eslint .",
     "test": "tsx --env-file=.env --test src/**/*.test.ts",
+    "test:live": "tsx --env-file=.env src/test-endpoints-live.ts",
     "db:generate": "prisma generate",
     "db:migrate:dev": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
