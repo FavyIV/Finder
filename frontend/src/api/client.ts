@@ -31,15 +31,25 @@ export function removeStoredToken(): void {
   localStorage.removeItem(AUTH_TOKEN_KEY);
 }
 
+const API_BASE_URL =
+  typeof import.meta.env.VITE_API_URL === 'string'
+    ? import.meta.env.VITE_API_URL.replace(/\/+$/, '')
+    : '';
+
+function buildApiUrl(endpoint: string): string {
+  const path = endpoint.startsWith('/') ? `/api/v1${endpoint}` : `/api/v1/${endpoint}`;
+  return `${API_BASE_URL}${path}`;
+}
+
 /**
  * Standard fetch wrapper that enforces API standards:
- * - Prepends /api/v1
+ * - Prepends /api/v1 (with optional VITE_API_URL base)
  * - Attaches Bearer JWT from localStorage
  * - Unwraps { data: T } envelope
  * - Throws typed ApiError on failures
  */
 export async function apiClient<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const url = endpoint.startsWith('/') ? `/api/v1${endpoint}` : `/api/v1/${endpoint}`;
+  const url = buildApiUrl(endpoint);
   const token = getStoredToken();
 
   const headers: Record<string, string> = {
@@ -81,7 +91,7 @@ export async function apiClientWithMeta<T, M>(
   endpoint: string,
   options: RequestInit = {},
 ): Promise<PaginatedResponse<T, M>> {
-  const url = endpoint.startsWith('/') ? `/api/v1${endpoint}` : `/api/v1/${endpoint}`;
+  const url = buildApiUrl(endpoint);
   const token = getStoredToken();
 
   const headers: Record<string, string> = {
