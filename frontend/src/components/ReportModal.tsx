@@ -1,5 +1,6 @@
 import { useState, type ReactElement, type FormEvent } from 'react';
 import { useCreateReport } from '../hooks/useReports';
+import { Button } from './ui/Button';
 
 export type ReportModalProps = {
   listingId: string;
@@ -62,28 +63,53 @@ export function ReportModal({ listingId, isOpen, onClose }: ReportModalProps): R
       role="dialog"
       aria-modal="true"
       aria-labelledby="report-modal-title"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
     >
-      <div className="w-full max-w-md rounded-lg border border-gray-200 bg-white p-6 shadow-xl">
-        <h2 id="report-modal-title" className="text-lg font-bold text-gray-900">
-          🚩 Report Found Listing
-        </h2>
-        <p className="mt-1 text-xs text-gray-600">
-          Flag this listing for campus admin review if you believe it contains fraudulent details,
-          spam, or misleading information.
-        </p>
+      <div
+        className="backdrop-blur-xs animate-fade-in fixed inset-0 bg-black/50"
+        onClick={handleClose}
+        aria-hidden="true"
+      />
+
+      <div className="shadow-dialog animate-slide-in relative z-10 w-full max-w-md rounded-2xl border border-gray-200 bg-white p-6 sm:p-7 dark:border-gray-800 dark:bg-gray-900">
+        <div className="flex items-start justify-between border-b border-gray-100 pb-3 dark:border-gray-800">
+          <div>
+            <h2
+              id="report-modal-title"
+              className="flex items-center gap-1.5 text-lg font-bold tracking-tight text-gray-900 dark:text-gray-100"
+            >
+              🚩 Report Found Listing
+            </h2>
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              Flag this listing for campus admin review if you notice suspicious or fraudulent
+              details.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={handleClose}
+            className="rounded-lg p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+            aria-label="Close dialog"
+          >
+            ✕
+          </button>
+        </div>
 
         {isSuccess ? (
-          <div className="my-6 rounded-md border border-green-200 bg-green-50 p-4 text-center text-xs text-green-800">
-            <p className="font-semibold">✓ Report submitted successfully</p>
-            <p className="mt-1 text-gray-600">
-              The listing has been marked as under review and campus moderators have been notified.
+          <div className="my-6 rounded-xl border border-green-200 bg-green-50 p-5 text-center text-xs text-green-800 dark:border-green-800 dark:bg-green-950/60 dark:text-green-300">
+            <span className="text-2xl">✓</span>
+            <p className="mt-2 text-sm font-bold">Report submitted successfully</p>
+            <p className="mt-1 text-gray-600 dark:text-gray-400">
+              The listing has been marked as Under Review and campus moderators have been notified.
             </p>
           </div>
         ) : (
-          <form onSubmit={(e) => void handleSubmit(e)} className="mt-4 space-y-4">
+          <form onSubmit={(e) => void handleSubmit(e)} className="mt-5 space-y-4">
             <div>
-              <label htmlFor="report-reason" className="block text-xs font-semibold text-gray-700">
+              <label
+                htmlFor="report-reason"
+                className="block text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300"
+              >
                 Reason for report <span className="text-red-500">*</span>
               </label>
               <textarea
@@ -91,12 +117,12 @@ export function ReportModal({ listingId, isOpen, onClose }: ReportModalProps): R
                 rows={4}
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
-                placeholder="Explain why this listing is fraudulent, inappropriate, or incorrect (min 5 characters)..."
-                className="mt-1 block w-full rounded-md border border-gray-300 p-2.5 text-xs text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+                placeholder="Explain why this listing is fraudulent, inappropriate, or incorrect..."
+                className="mt-1.5 block w-full rounded-xl border border-gray-300 bg-white p-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
                 maxLength={500}
                 required
               />
-              <div className="mt-1 flex justify-between text-[11px] text-gray-400">
+              <div className="mt-1.5 flex justify-between text-[11px] text-gray-400">
                 <span>Min 5 characters</span>
                 <span>{reason.length}/500</span>
               </div>
@@ -105,7 +131,7 @@ export function ReportModal({ listingId, isOpen, onClose }: ReportModalProps): R
             {validationError && (
               <div
                 role="alert"
-                className="rounded-md border border-amber-200 bg-amber-50 p-2.5 text-xs text-amber-800"
+                className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs font-medium text-amber-800 dark:border-amber-800 dark:bg-amber-950/60 dark:text-amber-300"
               >
                 {validationError}
               </div>
@@ -114,28 +140,31 @@ export function ReportModal({ listingId, isOpen, onClose }: ReportModalProps): R
             {serverError && (
               <div
                 role="alert"
-                className="rounded-md border border-red-200 bg-red-50 p-2.5 text-xs text-red-700"
+                className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-medium text-red-700 dark:border-red-800 dark:bg-red-950/60 dark:text-red-300"
               >
                 {serverError}
               </div>
             )}
 
-            <div className="flex justify-end gap-3 pt-2">
-              <button
+            <div className="flex justify-end gap-3 border-t border-gray-100 pt-3 dark:border-gray-800">
+              <Button
                 type="button"
+                variant="secondary"
+                size="md"
                 onClick={handleClose}
                 disabled={reportMutation.isPending}
-                className="rounded-md border border-gray-300 bg-white px-4 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-300 disabled:opacity-50"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
+                variant="danger"
+                size="md"
+                loading={reportMutation.isPending}
                 disabled={reportMutation.isPending || reason.trim().length < 5}
-                className="rounded-md bg-red-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50"
               >
                 {reportMutation.isPending ? 'Submitting...' : 'Submit Report'}
-              </button>
+              </Button>
             </div>
           </form>
         )}
