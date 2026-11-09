@@ -4,6 +4,9 @@ import { FilterBar, type FilterValues } from '../components/FilterBar';
 import { ListingCard } from '../components/ListingCard';
 import { useSearchFoundListings } from '../hooks/useFoundListings';
 import { useCurrentUser } from '../hooks/useAuth';
+import { CardSkeletonGrid } from '../components/ui/Skeleton';
+import { EmptyState } from '../components/ui/EmptyState';
+import { Button } from '../components/ui/Button';
 
 export function SearchFoundItemsPage(): ReactElement {
   const { data: currentUser } = useCurrentUser();
@@ -37,140 +40,132 @@ export function SearchFoundItemsPage(): ReactElement {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-6xl">
-        {/* Navigation & Header */}
-        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <Link to="/" className="text-brand-600 hover:text-brand-500 text-sm font-medium">
-              ← Back to Home
-            </Link>
-            <h1 className="mt-1 text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
-              Search Found Items
-            </h1>
-            <p className="mt-1 text-sm text-gray-600">
-              Filter through items currently logged and stored at campus security posts.
-            </p>
-          </div>
+    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+      {/* Page Header */}
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl dark:text-gray-100">
+            Found Items Directory
+          </h1>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            Search items stored physically at campus security posts awaiting verified collection.
+          </p>
+        </div>
 
-          <div className="flex gap-2">
-            {currentUser && (
-              <Link
-                to="/report-found"
-                className="bg-brand-600 hover:bg-brand-700 rounded-md px-4 py-2 text-sm font-medium text-white shadow-sm"
-              >
+        {currentUser && (
+          <div>
+            <Link to="/report-found">
+              <Button variant="primary" size="md">
                 + Report Found Item
-              </Link>
-            )}
-          </div>
-        </div>
-
-        {/* Directory Switcher Tabs */}
-        <div className="mb-6 border-b border-gray-200">
-          <nav className="-mb-px flex space-x-6">
-            <span className="border-brand-600 text-brand-600 border-b-2 pb-3 text-xs font-semibold uppercase tracking-wider">
-              Found Items Directory
-            </span>
-            <Link
-              to="/lost"
-              className="border-b-2 border-transparent pb-3 text-xs font-semibold uppercase tracking-wider text-gray-500 hover:border-gray-300 hover:text-gray-700"
-            >
-              Lost Items Notices
+              </Button>
             </Link>
-          </nav>
-        </div>
-
-        {/* Structured Filter Bar */}
-        <div className="mb-8">
-          <FilterBar
-            filters={filters}
-            onFilterChange={handleFilterChange}
-            onReset={handleResetFilters}
-          />
-        </div>
-
-        {/* Listings Section Handling Loading, Error, Empty States */}
-        {isLoading ? (
-          <div className="flex min-h-[300px] items-center justify-center rounded-lg border border-gray-200 bg-white p-12">
-            <p className="text-sm text-gray-500">Loading found items...</p>
-          </div>
-        ) : error ? (
-          <div
-            role="alert"
-            className="rounded-lg border border-red-200 bg-red-50 p-6 text-center text-red-700"
-          >
-            <p className="font-semibold">Unable to load found listings</p>
-            <p className="mt-1 text-xs">{error.message}</p>
-          </div>
-        ) : data?.data && data.data.length > 0 ? (
-          <div>
-            <div className="mb-4 flex items-center justify-between text-xs text-gray-500">
-              <span>
-                Showing {data.data.length} of {data.meta.total} available items
-              </span>
-              <span>
-                Page {data.meta.page} of {data.meta.totalPages}
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-              {data.data.map((listing) => (
-                <ListingCard key={listing.id} listing={listing} />
-              ))}
-            </div>
-
-            {/* Pagination Controls */}
-            {data.meta.totalPages > 1 && (
-              <div className="mt-8 flex items-center justify-center gap-3">
-                <button
-                  type="button"
-                  disabled={data.meta.page <= 1}
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40"
-                >
-                  Previous
-                </button>
-                <span className="text-xs text-gray-600">
-                  Page {data.meta.page} of {data.meta.totalPages}
-                </span>
-                <button
-                  type="button"
-                  disabled={data.meta.page >= data.meta.totalPages}
-                  onClick={() => setPage((p) => p + 1)}
-                  className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40"
-                >
-                  Next
-                </button>
-              </div>
-            )}
-          </div>
-        ) : (
-          /* Empty State per Core User Flow */
-          <div className="flex min-h-[300px] flex-col items-center justify-center rounded-lg border border-dashed border-gray-300 bg-white p-12 text-center">
-            <span className="text-4xl">🔍</span>
-            <h3 className="mt-3 text-lg font-semibold text-gray-900">No matching found items</h3>
-            <p className="mt-1 max-w-md text-sm text-gray-500">
-              We couldn't find any unclaimed items matching your selected filters. If you lost an
-              item, you can post a lost item listing so it's on record.
-            </p>
-            <div className="mt-6 flex gap-3">
-              <button
-                type="button"
-                onClick={handleResetFilters}
-                className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-              >
-                Clear Filters
-              </button>
-              <Link
-                to="/report-lost"
-                className="bg-brand-600 hover:bg-brand-700 rounded-md px-4 py-2 text-sm font-medium text-white"
-              >
-                Post a Lost Item
-              </Link>
-            </div>
           </div>
         )}
       </div>
+
+      {/* Directory Switcher Tabs */}
+      <div className="mb-6 flex w-fit gap-1 rounded-2xl bg-gray-200/70 p-1 dark:bg-gray-800/80">
+        <span className="shadow-xs rounded-xl bg-white px-4 py-2 text-xs font-bold text-gray-900 dark:bg-gray-900 dark:text-gray-100">
+          Found Items
+        </span>
+        <Link
+          to="/lost"
+          className="rounded-xl px-4 py-2 text-xs font-semibold text-gray-600 transition-colors hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+        >
+          Lost Notices
+        </Link>
+      </div>
+
+      {/* Structured Filter Bar */}
+      <div className="mb-8">
+        <FilterBar
+          filters={filters}
+          onFilterChange={handleFilterChange}
+          onReset={handleResetFilters}
+        />
+      </div>
+
+      {/* Listings Section */}
+      {isLoading ? (
+        <CardSkeletonGrid count={8} />
+      ) : error ? (
+        <div
+          role="alert"
+          className="rounded-2xl border border-red-200 bg-red-50 p-8 text-center text-red-700 dark:border-red-800 dark:bg-red-950/60 dark:text-red-300"
+        >
+          <p className="text-base font-bold">Unable to load found listings</p>
+          <p className="mt-1 text-xs">{error.message}</p>
+        </div>
+      ) : data?.data && data.data.length > 0 ? (
+        <div>
+          <div className="mb-5 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+            <span>
+              Showing{' '}
+              <strong className="font-semibold text-gray-800 dark:text-gray-200">
+                {data.data.length}
+              </strong>{' '}
+              of{' '}
+              <strong className="font-semibold text-gray-800 dark:text-gray-200">
+                {data.meta.total}
+              </strong>{' '}
+              available items
+            </span>
+            <span>
+              Page {data.meta.page} of {data.meta.totalPages}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            {data.data.map((listing) => (
+              <ListingCard key={listing.id} listing={listing} />
+            ))}
+          </div>
+
+          {/* Pagination Controls */}
+          {data.meta.totalPages > 1 && (
+            <div className="mt-10 flex items-center justify-center gap-3">
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={data.meta.page <= 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+              >
+                Previous
+              </Button>
+              <span className="px-2 text-xs font-medium text-gray-600 dark:text-gray-400">
+                Page {data.meta.page} of {data.meta.totalPages}
+              </span>
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={data.meta.page >= data.meta.totalPages}
+                onClick={() => setPage((p) => p + 1)}
+              >
+                Next
+              </Button>
+            </div>
+          )}
+        </div>
+      ) : (
+        /* Empty State */
+        <EmptyState
+          icon="🔍"
+          title="No matching found items"
+          description="We couldn't find any unclaimed items matching your selected criteria. If you lost an item, post a lost notice so finders know what to look out for."
+          actions={[
+            {
+              label: 'Clear Filters',
+              onClick: handleResetFilters,
+              variant: 'secondary',
+            },
+            {
+              label: 'Post a Lost Item Notice',
+              href: '/report-lost',
+              variant: 'primary',
+            },
+          ]}
+        />
+      )}
     </div>
   );
 }

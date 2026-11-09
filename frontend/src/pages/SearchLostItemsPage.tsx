@@ -4,6 +4,10 @@ import { useCurrentUser } from '../hooks/useAuth';
 import { useLostListings } from '../hooks/useLostListings';
 import { LostListingCard } from '../components/LostListingCard';
 import { CATEGORIES, type Category } from '../types/found-listing.types';
+import { Select } from '../components/ui/Select';
+import { Button } from '../components/ui/Button';
+import { EmptyState } from '../components/ui/EmptyState';
+import { CardSkeletonGrid } from '../components/ui/Skeleton';
 
 export function SearchLostItemsPage(): ReactElement {
   const { data: currentUser } = useCurrentUser();
@@ -22,158 +26,146 @@ export function SearchLostItemsPage(): ReactElement {
   const meta = data?.meta;
 
   return (
-    <div className="min-h-screen bg-gray-50 px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-5xl">
-        {/* Navigation & Header */}
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <Link to="/" className="text-brand-600 hover:text-brand-500 text-xs font-medium">
-                ← Home
-              </Link>
-            </div>
-            <h1 className="mt-1 text-2xl font-bold tracking-tight text-gray-900">
-              Campus Lost Items Notices
-            </h1>
-            <p className="mt-1 text-xs text-gray-600">
-              Browse items reported missing across campus or post your own notice.
-            </p>
-          </div>
+    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+      {/* Navigation & Header */}
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl dark:text-gray-100">
+            Lost Items Notices
+          </h1>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            Browse items reported missing across campus or post your own notice so finders know who
+            to alert.
+          </p>
+        </div>
 
-          <div className="flex items-center gap-3">
-            <Link
-              to="/report-lost"
-              className="bg-brand-600 hover:bg-brand-700 focus:ring-brand-500 rounded-md px-3.5 py-2 text-xs font-semibold text-white shadow-sm focus:outline-none focus:ring-2"
-            >
+        <div>
+          <Link to="/report-lost">
+            <Button variant="primary" size="md">
               + Post Lost Item
-            </Link>
-          </div>
+            </Button>
+          </Link>
         </div>
+      </div>
 
-        {/* Directory Switcher Tabs */}
-        <div className="mb-6 border-b border-gray-200">
-          <nav className="-mb-px flex space-x-6">
-            <Link
-              to="/found"
-              className="border-b-2 border-transparent pb-3 text-xs font-semibold uppercase tracking-wider text-gray-500 hover:border-gray-300 hover:text-gray-700"
+      {/* Directory Switcher Tabs */}
+      <div className="mb-6 flex w-fit gap-1 rounded-2xl bg-gray-200/70 p-1 dark:bg-gray-800/80">
+        <Link
+          to="/found"
+          className="rounded-xl px-4 py-2 text-xs font-semibold text-gray-600 transition-colors hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+        >
+          Found Items
+        </Link>
+        <span className="shadow-xs rounded-xl bg-white px-4 py-2 text-xs font-bold text-gray-900 dark:bg-gray-900 dark:text-gray-100">
+          Lost Notices
+        </span>
+      </div>
+
+      {/* Filter Controls Bar */}
+      <div className="shadow-card mb-6 rounded-2xl border border-gray-200 bg-white p-5 transition-colors dark:border-gray-800 dark:bg-gray-900">
+        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+          <div className="w-full sm:max-w-xs">
+            <Select
+              label="Filter Category"
+              id="filter-cat"
+              value={selectedCategory}
+              onChange={(e) => {
+                setSelectedCategory(e.target.value as Category | '');
+                setCurrentPage(1);
+              }}
             >
-              Found Items Directory
-            </Link>
-            <span className="border-brand-600 text-brand-600 border-b-2 pb-3 text-xs font-semibold uppercase tracking-wider">
-              Lost Items Notices
-            </span>
-          </nav>
-        </div>
+              <option value="">All Categories</option>
+              {CATEGORIES.map((cat) => (
+                <option key={cat.value} value={cat.value}>
+                  {cat.label}
+                </option>
+              ))}
+            </Select>
+          </div>
 
-        {/* Filter Controls Bar */}
-        <div className="mb-6 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex flex-wrap items-center gap-3">
-              <label htmlFor="filter-cat" className="text-xs font-semibold text-gray-700">
-                Filter Category:
-              </label>
-              <select
-                id="filter-cat"
-                value={selectedCategory}
+          {currentUser && (
+            <label className="flex cursor-pointer items-center gap-2.5 py-1 text-xs font-semibold text-gray-700 dark:text-gray-300">
+              <input
+                type="checkbox"
+                checked={mineOnly}
                 onChange={(e) => {
-                  setSelectedCategory(e.target.value as Category | '');
+                  setMineOnly(e.target.checked);
                   setCurrentPage(1);
                 }}
-                className="focus:border-brand-500 focus:ring-brand-500 rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-xs text-gray-800 shadow-sm focus:outline-none focus:ring-1"
-              >
-                <option value="">All Categories</option>
-                {CATEGORIES.map((cat) => (
-                  <option key={cat.value} value={cat.value}>
-                    {cat.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {currentUser && (
-              <label className="flex cursor-pointer items-center gap-2 text-xs font-medium text-gray-700">
-                <input
-                  type="checkbox"
-                  checked={mineOnly}
-                  onChange={(e) => {
-                    setMineOnly(e.target.checked);
-                    setCurrentPage(1);
-                  }}
-                  className="text-brand-600 focus:ring-brand-500 h-4 w-4 rounded border-gray-300"
-                />
-                Show only my lost items
-              </label>
-            )}
-          </div>
+                className="text-brand-600 focus:ring-brand-500 h-4 w-4 rounded-md border-gray-300"
+              />
+              Show only my notices
+            </label>
+          )}
         </div>
-
-        {/* Listings Grid */}
-        {isLoading ? (
-          <div className="flex min-h-[300px] items-center justify-center rounded-lg border border-gray-200 bg-white">
-            <p className="text-xs text-gray-500">Loading lost item notices...</p>
-          </div>
-        ) : error ? (
-          <div className="rounded-lg border border-red-200 bg-white p-6 text-center">
-            <h2 className="text-sm font-bold text-red-700">Error Loading Notices</h2>
-            <p className="mt-1 text-xs text-gray-600">{error.message}</p>
-          </div>
-        ) : listings.length === 0 ? (
-          <div className="flex min-h-[250px] flex-col items-center justify-center rounded-lg border border-dashed border-gray-300 bg-white p-6 text-center">
-            <span className="text-3xl">🔍</span>
-            <h3 className="mt-2 text-sm font-semibold text-gray-900">No lost notices found</h3>
-            <p className="mt-1 text-xs text-gray-500">
-              {mineOnly
-                ? "You haven't posted any lost item notices yet."
-                : 'No missing items currently match your filter criteria.'}
-            </p>
-            <div className="mt-4">
-              <Link
-                to="/report-lost"
-                className="bg-brand-600 hover:bg-brand-700 rounded-md px-3.5 py-2 text-xs font-semibold text-white"
-              >
-                Post a Notice Now
-              </Link>
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {listings.map((item) => (
-                <LostListingCard
-                  key={item.id}
-                  listing={item}
-                  isOwner={currentUser?.id === item.postedBy.id}
-                />
-              ))}
-            </div>
-
-            {/* Pagination */}
-            {meta && meta.totalPages > 1 && (
-              <div className="flex items-center justify-between border-t border-gray-200 pt-4">
-                <button
-                  type="button"
-                  disabled={currentPage <= 1}
-                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                  className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-50 disabled:opacity-50"
-                >
-                  Previous
-                </button>
-                <span className="text-xs text-gray-600">
-                  Page {currentPage} of {meta.totalPages} ({meta.total} total)
-                </span>
-                <button
-                  type="button"
-                  disabled={currentPage >= meta.totalPages}
-                  onClick={() => setCurrentPage((p) => Math.min(meta.totalPages, p + 1))}
-                  className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-50 disabled:opacity-50"
-                >
-                  Next
-                </button>
-              </div>
-            )}
-          </div>
-        )}
       </div>
+
+      {/* Listings Grid */}
+      {isLoading ? (
+        <CardSkeletonGrid count={6} />
+      ) : error ? (
+        <div
+          role="alert"
+          className="rounded-2xl border border-red-200 bg-red-50 p-8 text-center text-red-700 dark:border-red-800 dark:bg-red-950/60 dark:text-red-300"
+        >
+          <p className="text-base font-bold">Error loading notices</p>
+          <p className="mt-1 text-xs">{error.message}</p>
+        </div>
+      ) : listings.length === 0 ? (
+        <EmptyState
+          icon="📋"
+          title="No lost notices found"
+          description={
+            mineOnly
+              ? "You haven't posted any lost item notices yet."
+              : 'No missing items currently match your filter criteria.'
+          }
+          actions={[
+            {
+              label: 'Post a Notice Now',
+              href: '/report-lost',
+              variant: 'primary',
+            },
+          ]}
+        />
+      ) : (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {listings.map((item) => (
+              <LostListingCard
+                key={item.id}
+                listing={item}
+                isOwner={currentUser?.id === item.postedBy.id}
+              />
+            ))}
+          </div>
+
+          {/* Pagination */}
+          {meta && meta.totalPages > 1 && (
+            <div className="mt-10 flex items-center justify-center gap-3">
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={currentPage <= 1}
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              >
+                Previous
+              </Button>
+              <span className="px-2 text-xs font-medium text-gray-600 dark:text-gray-400">
+                Page {currentPage} of {meta.totalPages} ({meta.total} notices)
+              </span>
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={currentPage >= meta.totalPages}
+                onClick={() => setCurrentPage((p) => Math.min(meta.totalPages, p + 1))}
+              >
+                Next
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
