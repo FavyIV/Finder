@@ -5,6 +5,11 @@ import { CATEGORIES, type Category } from '../types/found-listing.types';
 import { useFoundListing, useUpdateFoundListing } from '../hooks/useFoundListings';
 import { useLocations } from '../hooks/useLocations';
 import { useCurrentUser } from '../hooks/useAuth';
+import { Card } from '../components/ui/Card';
+import { Input } from '../components/ui/Input';
+import { Select } from '../components/ui/Select';
+import { Button } from '../components/ui/Button';
+import { EmptyState } from '../components/ui/EmptyState';
 
 type EditFoundItemFormValues = {
   category: Category;
@@ -112,7 +117,7 @@ export function EditFoundListingPage(): ReactElement {
 
   if (isCheckingAuth || isLoadingListing) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
+      <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center p-4">
         <p className="text-sm text-gray-500">Loading listing details...</p>
       </div>
     );
@@ -120,251 +125,207 @@ export function EditFoundListingPage(): ReactElement {
 
   if (listingError || !listing) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 p-4">
-        <div className="max-w-md rounded-lg border border-red-200 bg-white p-6 text-center shadow-sm">
-          <h2 className="text-lg font-bold text-red-700">Listing Not Found</h2>
-          <p className="mt-1 text-sm text-gray-600">
-            The listing could not be found or has been removed.
-          </p>
-          <div className="mt-4">
-            <Link to="/found" className="text-brand-600 hover:text-brand-500 text-sm font-medium">
-              Back to Search
-            </Link>
-          </div>
-        </div>
+      <div className="mx-auto max-w-lg px-4 py-16">
+        <EmptyState
+          icon="🔍"
+          title="Listing Not Found"
+          description="The requested listing could not be found or has been removed."
+          actions={[{ label: 'Back to Directory', href: '/found', variant: 'primary' }]}
+        />
       </div>
     );
   }
 
-  // Enforce Invariant #4: Only owner can edit
+  // Invariant #4: Only owner can edit
   const isOwner = currentUser?.id === listing.reportedBy.id;
   if (!isOwner) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 p-4">
-        <div className="max-w-md rounded-lg border border-red-200 bg-white p-6 text-center shadow-sm">
-          <h2 className="text-lg font-bold text-red-700">Access Denied</h2>
-          <p className="mt-2 text-sm text-gray-600">
-            You can only edit listings you reported. This listing belongs to{' '}
-            {listing.reportedBy.name}.
-          </p>
-          <div className="mt-4">
-            <Link
-              to={`/found/${listingId}`}
-              className="bg-brand-600 hover:bg-brand-700 rounded-md px-4 py-2 text-sm font-medium text-white"
-            >
-              View Listing
-            </Link>
-          </div>
-        </div>
+      <div className="mx-auto max-w-lg px-4 py-16">
+        <EmptyState
+          icon="🚫"
+          title="Access Denied"
+          description={`You can only edit listings you personally logged. This listing was recorded by ${listing.reportedBy.name}.`}
+          actions={[{ label: 'View Listing', href: `/found/${listingId}`, variant: 'primary' }]}
+        />
       </div>
     );
   }
 
-  // Enforce Invariant #4: Can only edit while AVAILABLE
+  // Invariant #4: Can only edit while AVAILABLE
   if (listing.status !== 'AVAILABLE') {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 p-4">
-        <div className="max-w-md rounded-lg border border-amber-200 bg-white p-6 text-center shadow-sm">
-          <span className="text-3xl">🔒</span>
-          <h2 className="mt-2 text-lg font-bold text-gray-900">Listing Locked</h2>
-          <p className="mt-2 text-sm text-gray-600">
-            This listing is currently in status{' '}
-            <span className="font-semibold">{listing.status}</span> and cannot be edited. It
-            reflects a final outcome in the records.
-          </p>
-          <div className="mt-4">
-            <Link
-              to={`/found/${listingId}`}
-              className="bg-brand-600 hover:bg-brand-700 rounded-md px-4 py-2 text-sm font-medium text-white"
-            >
-              Back to Details
-            </Link>
-          </div>
-        </div>
+      <div className="mx-auto max-w-lg px-4 py-16">
+        <EmptyState
+          icon="🔒"
+          title="Listing Locked"
+          description={`This listing is currently in status ${listing.status} and cannot be modified.`}
+          actions={[{ label: 'Back to Details', href: `/found/${listingId}`, variant: 'primary' }]}
+        />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-2xl">
-        <div className="mb-6 flex items-center justify-between">
-          <Link
-            to={`/found/${listingId}`}
-            className="text-brand-600 hover:text-brand-500 text-sm font-medium"
+    <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mb-6 flex items-center justify-between">
+        <Link
+          to={`/found/${listingId}`}
+          className="text-brand-600 dark:text-brand-400 hover:text-brand-700 flex items-center gap-1 text-xs font-semibold"
+        >
+          ← Cancel and return to listing
+        </Link>
+        <span className="text-xs text-gray-500 dark:text-gray-400">
+          Editing Listing #{listingId.slice(0, 8)}
+        </span>
+      </div>
+
+      <Card padding="lg">
+        <h1 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl dark:text-gray-100">
+          Edit Found Listing
+        </h1>
+        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          Update the item's details or photo while it remains available for collection.
+        </p>
+
+        {updateMutation.error && (
+          <div
+            role="alert"
+            className="mt-4 rounded-2xl border border-red-200 bg-red-50 p-4 text-xs font-semibold text-red-700 dark:border-red-800 dark:bg-red-950/60 dark:text-red-300"
           >
-            ← Back to Item Details
-          </Link>
-          <span className="text-xs text-gray-500">Editing as Reporter</span>
-        </div>
+            {updateMutation.error.message}
+          </div>
+        )}
 
-        <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
-          <h1 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
-            Edit Found Listing
-          </h1>
-          <p className="mt-1 text-sm text-gray-600">
-            Correct any mistakes made when you logged this found item.
-          </p>
-
-          {listing.isUnderReview && (
-            <div className="mt-4 rounded-md border border-yellow-200 bg-yellow-50 p-3 text-xs text-yellow-800">
-              ⚠️ Note: This listing is currently marked as <strong>Under Review</strong>. Saving
-              edits will update the information, but moderator review will remain pending.
-            </div>
-          )}
-
-          {updateMutation.error && (
-            <div
-              role="alert"
-              className="mt-4 rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-700"
-            >
-              {updateMutation.error.message}
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit(onSubmit)} className="mt-6 space-y-6" noValidate>
-            {/* Photo update */}
-            <div>
-              <label htmlFor="photo" className="block text-sm font-medium text-gray-700">
-                Item Photo (Optional Replacement)
-              </label>
-              <div className="mt-2 flex items-center gap-4">
-                <div className="h-20 w-20 shrink-0 overflow-hidden rounded-md border border-gray-200 bg-gray-100">
-                  <img
-                    src={previewUrl || listing.photoUrl}
-                    alt="Current item"
-                    className="h-full w-full object-cover"
-                  />
-                </div>
-                <div>
+        <form onSubmit={handleSubmit(onSubmit)} className="mt-6 space-y-5" noValidate>
+          {/* Photo Replacement */}
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300">
+              Item Photo{' '}
+              <span className="font-normal lowercase text-gray-400">(optional replacement)</span>
+            </label>
+            <div className="hover:border-brand-500 dark:bg-gray-850 mt-1 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-300 bg-gray-50 p-6 transition-all duration-150 dark:border-gray-700">
+              <div className="flex flex-col items-center">
+                <img
+                  src={previewUrl || listing.photoUrl}
+                  alt="Item preview"
+                  className="shadow-xs max-h-60 rounded-xl object-contain"
+                />
+                <div className="mt-3 flex gap-3">
                   <label
-                    htmlFor="photo"
-                    className="cursor-pointer rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                    htmlFor="edit-photo-upload"
+                    className="text-brand-600 dark:text-brand-400 hover:text-brand-700 cursor-pointer text-xs font-semibold"
                   >
-                    {previewUrl ? 'Change selected photo' : 'Upload replacement photo'}
+                    {previewUrl ? 'Change new photo' : 'Upload replacement photo'}
                   </label>
-                  <p className="mt-1 text-xs text-gray-500">JPEG, JPG, or PNG up to 10 MB</p>
+                  {previewUrl && (
+                    <>
+                      <span className="text-gray-300">|</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedFile(null);
+                          setPreviewUrl(null);
+                        }}
+                        className="text-xs font-semibold text-red-600 hover:text-red-700"
+                      >
+                        Keep original photo
+                      </button>
+                    </>
+                  )}
                 </div>
-                <input
-                  id="photo"
-                  type="file"
-                  accept="image/jpeg,image/jpg,image/png"
-                  onChange={handlePhotoChange}
-                  className="sr-only"
-                />
               </div>
-              {photoError && <p className="mt-1 text-xs text-red-600">{photoError}</p>}
-            </div>
-
-            {/* Category */}
-            <div>
-              <label htmlFor="category" className="block text-sm font-medium text-gray-700">
-                Category <span className="text-red-500">*</span>
-              </label>
-              <select
-                id="category"
-                {...register('category', { required: 'Please select a category' })}
-                className="focus:border-brand-500 focus:ring-brand-500 mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1"
-              >
-                {CATEGORIES.map((cat) => (
-                  <option key={cat.value} value={cat.value}>
-                    {cat.label}
-                  </option>
-                ))}
-              </select>
-              {errors.category && (
-                <p className="mt-1 text-xs text-red-600">{errors.category.message}</p>
-              )}
-            </div>
-
-            {/* Location */}
-            <div>
-              <label htmlFor="locationId" className="block text-sm font-medium text-gray-700">
-                Drop-off Security Post <span className="text-red-500">*</span>
-              </label>
-              {isLoadingLocations ? (
-                <p className="mt-2 text-xs text-gray-500">Loading campus posts...</p>
-              ) : (
-                <select
-                  id="locationId"
-                  {...register('locationId', { required: 'Please select a drop-off post' })}
-                  className="focus:border-brand-500 focus:ring-brand-500 mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1"
-                >
-                  {locations?.map((loc) => (
-                    <option key={loc.id} value={loc.id}>
-                      {loc.name}
-                    </option>
-                  ))}
-                </select>
-              )}
-              {errors.locationId && (
-                <p className="mt-1 text-xs text-red-600">{errors.locationId.message}</p>
-              )}
-            </div>
-
-            {/* Date and Time Found */}
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div>
-                <label htmlFor="foundAtDate" className="block text-sm font-medium text-gray-700">
-                  Date Found <span className="text-red-500">*</span>
-                </label>
-                <input
-                  id="foundAtDate"
-                  type="date"
-                  {...register('foundAtDate', { required: 'Date found is required' })}
-                  className="focus:border-brand-500 focus:ring-brand-500 mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1"
-                />
-                {errors.foundAtDate && (
-                  <p className="mt-1 text-xs text-red-600">{errors.foundAtDate.message}</p>
-                )}
-              </div>
-              <div>
-                <label htmlFor="foundAtTime" className="block text-sm font-medium text-gray-700">
-                  Time Found <span className="text-red-500">*</span>
-                </label>
-                <input
-                  id="foundAtTime"
-                  type="time"
-                  {...register('foundAtTime', { required: 'Time found is required' })}
-                  className="focus:border-brand-500 focus:ring-brand-500 mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1"
-                />
-                {errors.foundAtTime && (
-                  <p className="mt-1 text-xs text-red-600">{errors.foundAtTime.message}</p>
-                )}
-              </div>
-            </div>
-
-            {/* Description */}
-            <div>
-              <label htmlFor="description" className="block text-sm font-medium text-gray-700">
-                Description
-              </label>
-              <textarea
-                id="description"
-                rows={3}
-                {...register('description')}
-                className="focus:border-brand-500 focus:ring-brand-500 mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1"
+              <input
+                id="edit-photo-upload"
+                type="file"
+                accept="image/jpeg,image/jpg,image/png"
+                onChange={handlePhotoChange}
+                className="sr-only"
               />
             </div>
+            {photoError && <p className="mt-1 text-xs font-medium text-red-600">{photoError}</p>}
+          </div>
 
-            <div className="flex justify-end gap-3 border-t border-gray-100 pt-4">
-              <Link
-                to={`/found/${listingId}`}
-                className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-              >
+          {/* Category */}
+          <Select
+            label="Category"
+            id="category"
+            error={errors.category?.message}
+            {...register('category', { required: 'Please select a category' })}
+          >
+            {CATEGORIES.map((cat) => (
+              <option key={cat.value} value={cat.value}>
+                {cat.label}
+              </option>
+            ))}
+          </Select>
+
+          {/* Location */}
+          <Select
+            label="Security Post Location"
+            id="locationId"
+            disabled={isLoadingLocations}
+            error={errors.locationId?.message}
+            {...register('locationId', { required: 'Please select a security post' })}
+          >
+            {locations?.map((loc) => (
+              <option key={loc.id} value={loc.id}>
+                {loc.name}
+              </option>
+            ))}
+          </Select>
+
+          {/* Date & Time Found */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Input
+              label="Date Found"
+              id="foundAtDate"
+              type="date"
+              error={errors.foundAtDate?.message}
+              {...register('foundAtDate', { required: 'Date found is required' })}
+            />
+            <Input
+              label="Time Found"
+              id="foundAtTime"
+              type="time"
+              error={errors.foundAtTime?.message}
+              {...register('foundAtTime', { required: 'Time found is required' })}
+            />
+          </div>
+
+          {/* Description */}
+          <div>
+            <label
+              htmlFor="description"
+              className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300"
+            >
+              Description
+            </label>
+            <textarea
+              id="description"
+              rows={3}
+              {...register('description')}
+              className="focus:ring-brand-500 focus:border-brand-500 block w-full rounded-xl border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 outline-none transition-all duration-150 placeholder:text-gray-400 focus:ring-2 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+            />
+          </div>
+
+          <div className="flex justify-end gap-3 border-t border-gray-100 pt-3 dark:border-gray-800">
+            <Link to={`/found/${listingId}`}>
+              <Button type="button" variant="secondary" size="md">
                 Cancel
-              </Link>
-              <button
-                type="submit"
-                disabled={isSubmitting || updateMutation.isPending}
-                className="bg-brand-600 hover:bg-brand-700 focus:ring-brand-500 rounded-md px-4 py-2 text-sm font-medium text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50"
-              >
-                {updateMutation.isPending ? 'Saving changes...' : 'Save Changes'}
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
+              </Button>
+            </Link>
+            <Button
+              type="submit"
+              variant="primary"
+              size="md"
+              loading={isSubmitting || updateMutation.isPending}
+              disabled={isSubmitting || updateMutation.isPending}
+            >
+              {updateMutation.isPending ? 'Saving Changes...' : 'Save Changes'}
+            </Button>
+          </div>
+        </form>
+      </Card>
     </div>
   );
 }

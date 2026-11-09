@@ -3,6 +3,11 @@ import { Link } from 'react-router-dom';
 import { useCurrentUser } from '../hooks/useAuth';
 import { useAdminReports, useResolveReport } from '../hooks/useReports';
 import type { ReportStatus } from '../types/report.types';
+import { Card } from '../components/ui/Card';
+import { Button } from '../components/ui/Button';
+import { Dialog } from '../components/ui/Dialog';
+import { EmptyState } from '../components/ui/EmptyState';
+import { Skeleton } from '../components/ui/Skeleton';
 
 export function AdminModerationPage(): ReactElement {
   const { data: currentUser, isLoading: isAuthLoading } = useCurrentUser();
@@ -24,7 +29,7 @@ export function AdminModerationPage(): ReactElement {
 
   if (isAuthLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
+      <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center p-4">
         <p className="text-sm text-gray-500">Verifying administrator credentials...</p>
       </div>
     );
@@ -32,21 +37,13 @@ export function AdminModerationPage(): ReactElement {
 
   if (currentUser?.role !== 'ADMIN') {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 p-4">
-        <div className="max-w-md rounded-lg border border-red-200 bg-white p-6 text-center shadow-sm">
-          <h2 className="text-lg font-bold text-red-700">Access Restricted</h2>
-          <p className="mt-1 text-xs text-gray-600">
-            The moderation queue is strictly restricted to campus administrator accounts.
-          </p>
-          <div className="mt-4">
-            <Link
-              to="/"
-              className="bg-brand-600 hover:bg-brand-700 rounded-md px-4 py-2 text-xs font-semibold text-white"
-            >
-              Return to Home
-            </Link>
-          </div>
-        </div>
+      <div className="mx-auto max-w-lg px-4 py-16">
+        <EmptyState
+          icon="🚫"
+          title="Access Restricted"
+          description="The moderation queue is strictly restricted to authorized campus administrator accounts."
+          actions={[{ label: 'Return to Home', href: '/', variant: 'primary' }]}
+        />
       </div>
     );
   }
@@ -85,290 +82,282 @@ export function AdminModerationPage(): ReactElement {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-5xl">
-        {/* Header */}
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <Link to="/" className="text-brand-600 hover:text-brand-500 text-xs font-medium">
-                ← Home
-              </Link>
-              <span className="text-gray-300">/</span>
-              <span className="text-xs font-semibold text-gray-700">Admin Moderation</span>
+    <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+      {/* Header */}
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl dark:text-gray-100">
+            <span>🛡️</span> Moderation Queue
+          </h1>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            Review user-flagged listings for policy violations, misleading drop-offs, or fraud.
+          </p>
+        </div>
+
+        <div>
+          <span className="inline-flex items-center rounded-full border border-purple-200 bg-purple-50 px-3 py-1 text-xs font-semibold text-purple-700 dark:border-purple-800 dark:bg-purple-950/60 dark:text-purple-300">
+            Admin: {currentUser.name}
+          </span>
+        </div>
+      </div>
+
+      {/* Status Filter Pill Tabs */}
+      <div className="mb-6 flex w-fit gap-1 rounded-2xl bg-gray-200/70 p-1 dark:bg-gray-800/80">
+        {(['PENDING', 'DISMISSED', 'REMOVED'] as const).map((status) => (
+          <button
+            key={status}
+            type="button"
+            onClick={() => {
+              setSelectedStatus(status);
+              setCurrentPage(1);
+            }}
+            className={`rounded-xl px-4 py-2 text-xs font-bold transition-all duration-150 ${
+              selectedStatus === status
+                ? 'shadow-xs bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100'
+                : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100'
+            }`}
+          >
+            {status}
+          </button>
+        ))}
+      </div>
+
+      {/* Content Area */}
+      {isLoading ? (
+        <div className="space-y-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div
+              key={i}
+              className="shadow-card rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900"
+            >
+              <div className="flex gap-4">
+                <Skeleton variant="avatar" className="h-20 w-20 rounded-xl" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton variant="text" className="w-1/3" />
+                  <Skeleton variant="text" count={2} />
+                </div>
+              </div>
             </div>
-            <h1 className="mt-1 text-2xl font-bold tracking-tight text-gray-900">
-              🛡️ Moderation Queue
-            </h1>
-            <p className="mt-1 text-xs text-gray-600">
-              Review user-flagged listings for policy violations, fraud, or inappropriate content.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center rounded-full border border-purple-200 bg-purple-50 px-2.5 py-1 text-xs font-semibold text-purple-700">
-              Admin: {currentUser.name}
-            </span>
-          </div>
+          ))}
         </div>
-
-        {/* Status Filter Tabs */}
-        <div className="mb-6 border-b border-gray-200">
-          <nav className="-mb-px flex space-x-6">
-            {(['PENDING', 'DISMISSED', 'REMOVED'] as const).map((status) => (
-              <button
-                key={status}
-                type="button"
-                onClick={() => {
-                  setSelectedStatus(status);
-                  setCurrentPage(1);
-                }}
-                className={`border-b-2 pb-3 text-xs font-semibold uppercase tracking-wider transition-colors ${
-                  selectedStatus === status
-                    ? 'border-brand-600 text-brand-600'
-                    : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                }`}
-              >
-                {status}
-              </button>
-            ))}
-          </nav>
+      ) : error ? (
+        <div
+          role="alert"
+          className="rounded-2xl border border-red-200 bg-red-50 p-8 text-center text-red-700 dark:border-red-800 dark:bg-red-950/60 dark:text-red-300"
+        >
+          <p className="text-base font-bold">Error Loading Queue</p>
+          <p className="mt-1 text-xs">{error.message}</p>
         </div>
+      ) : reports.length === 0 ? (
+        <EmptyState
+          icon="✓"
+          title={`No ${selectedStatus.toLowerCase()} reports`}
+          description={`There are currently no listings flagged with ${selectedStatus} status in the queue.`}
+        />
+      ) : (
+        <div className="space-y-4">
+          {reports.map((report) => {
+            const formattedReportedAt = new Date(report.createdAt).toLocaleString(undefined, {
+              dateStyle: 'medium',
+              timeStyle: 'short',
+            });
 
-        {/* Content Area */}
-        {isLoading ? (
-          <div className="flex min-h-[300px] items-center justify-center rounded-lg border border-gray-200 bg-white">
-            <p className="text-xs text-gray-500">Loading reports...</p>
-          </div>
-        ) : error ? (
-          <div className="rounded-lg border border-red-200 bg-white p-6 text-center">
-            <h2 className="text-sm font-bold text-red-700">Error Loading Queue</h2>
-            <p className="mt-1 text-xs text-gray-600">{error.message}</p>
-          </div>
-        ) : reports.length === 0 ? (
-          <div className="flex min-h-[250px] flex-col items-center justify-center rounded-lg border border-dashed border-gray-300 bg-white p-6 text-center">
-            <span className="text-2xl">✓</span>
-            <h3 className="mt-2 text-sm font-semibold text-gray-900">
-              No {selectedStatus.toLowerCase()} reports
-            </h3>
-            <p className="mt-1 text-xs text-gray-500">
-              There are currently no reports marked as {selectedStatus}.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {reports.map((report) => {
-              const formattedReportedAt = new Date(report.createdAt).toLocaleString(undefined, {
-                dateStyle: 'medium',
-                timeStyle: 'short',
-              });
+            const formattedReviewedAt = report.reviewedAt
+              ? new Date(report.reviewedAt).toLocaleString(undefined, {
+                  dateStyle: 'medium',
+                  timeStyle: 'short',
+                })
+              : null;
 
-              const formattedReviewedAt = report.reviewedAt
-                ? new Date(report.reviewedAt).toLocaleString(undefined, {
-                    dateStyle: 'medium',
-                    timeStyle: 'short',
-                  })
-                : null;
+            return (
+              <Card key={report.id} padding="md">
+                {/* Report Metadata Header */}
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-100 pb-3 dark:border-gray-800">
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center rounded-full border border-red-200 bg-red-50 px-2.5 py-0.5 text-xs font-semibold text-red-700 dark:border-red-800 dark:bg-red-950/60 dark:text-red-300">
+                      🚩 Flagged by {report.reportedBy.name}
+                    </span>
+                    <span className="text-xs text-gray-400">• {formattedReportedAt}</span>
+                  </div>
 
-              return (
-                <div
-                  key={report.id}
-                  className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm"
-                >
-                  <div className="p-5">
-                    {/* Report Metadata Header */}
-                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-100 pb-3">
-                      <div className="flex items-center gap-2">
-                        <span className="inline-flex items-center rounded-full border border-red-200 bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-700">
-                          🚩 Flagged by {report.reportedBy.name}
+                  <div>
+                    {report.status === 'PENDING' && (
+                      <span className="inline-flex items-center rounded-full border border-amber-300 bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800 dark:border-amber-700 dark:bg-amber-950/70 dark:text-amber-300">
+                        Action Required
+                      </span>
+                    )}
+                    {report.status === 'DISMISSED' && (
+                      <span className="inline-flex items-center rounded-full border border-gray-200 bg-gray-100 px-2.5 py-0.5 text-xs font-semibold text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
+                        Dismissed by {report.reviewedBy?.name ?? 'Admin'} ({formattedReviewedAt})
+                      </span>
+                    )}
+                    {report.status === 'REMOVED' && (
+                      <span className="inline-flex items-center rounded-full border border-red-200 bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-800 dark:border-red-800 dark:bg-red-950/70 dark:text-red-300">
+                        Listing Removed by {report.reviewedBy?.name ?? 'Admin'} (
+                        {formattedReviewedAt})
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Reporter Reason Box */}
+                <div className="my-3.5 rounded-xl border border-amber-200 bg-amber-50/70 p-3.5 dark:border-amber-800 dark:bg-amber-950/60">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-amber-900 dark:text-amber-200">
+                    Reporter's Statement:
+                  </p>
+                  <p className="mt-1 text-xs font-medium leading-relaxed text-amber-950 dark:text-amber-100">
+                    "{report.reason || 'No specific statement provided.'}"
+                  </p>
+                </div>
+
+                {/* Associated Listing Snapshot */}
+                <div className="dark:bg-gray-850 mt-4 flex flex-col gap-4 rounded-xl border border-gray-100 bg-gray-50/70 p-4 sm:flex-row sm:items-center dark:border-gray-800">
+                  <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
+                    <img
+                      src={report.foundListing.photoUrl}
+                      alt={report.foundListing.description || 'Reported item'}
+                      className="h-full w-full object-cover object-center"
+                    />
+                  </div>
+
+                  <div className="flex-1 space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-brand-700 dark:text-brand-300 text-[10px] font-bold uppercase tracking-wider">
+                        {report.foundListing.category}
+                      </span>
+                      <span className="text-gray-300">•</span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        📍 {report.foundListing.location.name}
+                      </span>
+                    </div>
+
+                    <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                      {report.foundListing.description || 'Item listing without description'}
+                    </p>
+
+                    <div className="pt-1 text-xs">
+                      {report.foundListing.removedAt ? (
+                        <span className="font-semibold text-red-600 dark:text-red-400">
+                          ✕ Removed from public search
                         </span>
-                        <span className="text-xs text-gray-400">• {formattedReportedAt}</span>
-                      </div>
-
-                      {/* Status indicator */}
-                      <div>
-                        {report.status === 'PENDING' && (
-                          <span className="inline-flex items-center rounded-full border border-yellow-300 bg-yellow-100 px-2.5 py-0.5 text-xs font-semibold text-yellow-800">
-                            Action Required
-                          </span>
-                        )}
-                        {report.status === 'DISMISSED' && (
-                          <span className="inline-flex items-center rounded-full border border-gray-200 bg-gray-100 px-2.5 py-0.5 text-xs font-semibold text-gray-700">
-                            Dismissed by {report.reviewedBy?.name ?? 'Admin'} ({formattedReviewedAt}
-                            )
-                          </span>
-                        )}
-                        {report.status === 'REMOVED' && (
-                          <span className="inline-flex items-center rounded-full border border-red-200 bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-800">
-                            Listing Removed by {report.reviewedBy?.name ?? 'Admin'} (
-                            {formattedReviewedAt})
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Reported Reason Box */}
-                    <div className="my-3 rounded-md border border-amber-200 bg-amber-50/60 p-3">
-                      <p className="text-[11px] font-bold uppercase tracking-wider text-amber-900">
-                        Reporter's Statement:
-                      </p>
-                      <p className="mt-1 text-xs font-medium text-amber-950">
-                        "{report.reason || 'No specific statement provided.'}"
-                      </p>
-                    </div>
-
-                    {/* Associated Listing Snapshot */}
-                    <div className="mt-4 flex flex-col gap-4 rounded-md border border-gray-100 bg-gray-50/80 p-4 sm:flex-row sm:items-center">
-                      <div className="relative h-24 w-24 flex-shrink-0 overflow-hidden rounded-md border border-gray-200 bg-white">
-                        <img
-                          src={report.foundListing.photoUrl}
-                          alt={report.foundListing.description || 'Reported item'}
-                          className="h-full w-full object-cover object-center"
-                        />
-                      </div>
-
-                      <div className="flex-1 space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-brand-700 text-[11px] font-bold uppercase tracking-wider">
-                            {report.foundListing.category}
-                          </span>
-                          <span className="text-gray-300">•</span>
-                          <span className="text-xs text-gray-500">
-                            📍 {report.foundListing.location.name}
-                          </span>
-                        </div>
-
-                        <p className="text-sm font-semibold text-gray-900">
-                          {report.foundListing.description || 'Item listing without description'}
-                        </p>
-
-                        <div className="flex items-center gap-3 pt-1 text-xs">
-                          {report.foundListing.removedAt ? (
-                            <span className="font-semibold text-red-600">
-                              ✕ Removed from search
-                            </span>
-                          ) : (
-                            <Link
-                              to={`/found/${report.foundListing.id}`}
-                              className="text-brand-600 hover:text-brand-700 font-medium underline"
-                            >
-                              View full item listing →
-                            </Link>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Admin Actions for Pending Reports */}
-                      {report.status === 'PENDING' && (
-                        <div className="flex flex-row gap-2 pt-2 sm:flex-col sm:border-l sm:border-gray-200 sm:pl-4 sm:pt-0">
-                          <button
-                            type="button"
-                            onClick={() => handleOpenConfirm(report.id, 'DISMISSED')}
-                            className="flex-1 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-300"
-                          >
-                            Dismiss Report
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleOpenConfirm(report.id, 'REMOVED')}
-                            className="flex-1 rounded-md bg-red-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
-                          >
-                            Remove Listing
-                          </button>
-                        </div>
+                      ) : (
+                        <Link
+                          to={`/found/${report.foundListing.id}`}
+                          className="text-brand-600 dark:text-brand-400 hover:text-brand-700 font-semibold"
+                        >
+                          View full item listing →
+                        </Link>
                       )}
                     </div>
                   </div>
+
+                  {/* Actions for Pending Reports */}
+                  {report.status === 'PENDING' && (
+                    <div className="flex flex-row gap-2 pt-2 sm:flex-col sm:border-l sm:border-gray-200 sm:pl-4 sm:pt-0 dark:sm:border-gray-700">
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => handleOpenConfirm(report.id, 'DISMISSED')}
+                      >
+                        Dismiss Report
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="danger"
+                        size="sm"
+                        onClick={() => handleOpenConfirm(report.id, 'REMOVED')}
+                      >
+                        Remove Listing
+                      </Button>
+                    </div>
+                  )}
                 </div>
-              );
-            })}
+              </Card>
+            );
+          })}
 
-            {/* Pagination */}
-            {meta && meta.totalPages > 1 && (
-              <div className="flex items-center justify-between border-t border-gray-200 pt-4">
-                <button
-                  type="button"
-                  disabled={currentPage <= 1}
-                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                  className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-50 disabled:opacity-50"
-                >
-                  Previous
-                </button>
-                <span className="text-xs text-gray-600">
-                  Page {currentPage} of {meta.totalPages} ({meta.total} total)
-                </span>
-                <button
-                  type="button"
-                  disabled={currentPage >= meta.totalPages}
-                  onClick={() => setCurrentPage((p) => Math.min(meta.totalPages, p + 1))}
-                  className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-50 disabled:opacity-50"
-                >
-                  Next
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Resolution Confirmation Modal */}
-        {activeReportId && resolutionTarget && (
-          <div
-            role="dialog"
-            aria-modal="true"
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-          >
-            <div className="w-full max-w-md rounded-lg border border-gray-200 bg-white p-6 shadow-xl">
-              <h3 className="text-lg font-bold text-gray-900">
-                {resolutionTarget === 'REMOVED'
-                  ? 'Confirm Permanent Listing Removal'
-                  : 'Confirm Report Dismissal'}
-              </h3>
-
-              <p className="mt-2 text-xs text-gray-600">
-                {resolutionTarget === 'REMOVED'
-                  ? 'This action will immediately remove the reported item listing from all search results and public views. This action cannot be undone.'
-                  : 'Dismissing this report confirms the listing does not violate policy. The "Under Review" warning badge will be removed and the listing will remain active in search.'}
-              </p>
-
-              {actionError && (
-                <div
-                  role="alert"
-                  className="mt-3 rounded-md border border-red-200 bg-red-50 p-2.5 text-xs text-red-700"
-                >
-                  {actionError}
-                </div>
-              )}
-
-              <div className="mt-6 flex justify-end gap-3">
-                <button
-                  type="button"
-                  disabled={resolveMutation.isPending}
-                  onClick={handleCloseConfirm}
-                  className="rounded-md border border-gray-300 bg-white px-4 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  disabled={resolveMutation.isPending}
-                  onClick={() => void handleExecuteResolution()}
-                  className={`rounded-md px-4 py-2 text-xs font-semibold text-white shadow-sm focus:outline-none focus:ring-2 disabled:opacity-50 ${
-                    resolutionTarget === 'REMOVED'
-                      ? 'bg-red-600 hover:bg-red-700 focus:ring-red-500'
-                      : 'bg-brand-600 hover:bg-brand-700 focus:ring-brand-500'
-                  }`}
-                >
-                  {resolveMutation.isPending
-                    ? 'Processing...'
-                    : resolutionTarget === 'REMOVED'
-                      ? 'Remove Listing'
-                      : 'Dismiss Report'}
-                </button>
-              </div>
+          {/* Pagination */}
+          {meta && meta.totalPages > 1 && (
+            <div className="mt-8 flex items-center justify-center gap-3">
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={currentPage <= 1}
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              >
+                Previous
+              </Button>
+              <span className="px-2 text-xs font-medium text-gray-600 dark:text-gray-400">
+                Page {currentPage} of {meta.totalPages} ({meta.total} total)
+              </span>
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={currentPage >= meta.totalPages}
+                onClick={() => setCurrentPage((p) => Math.min(meta.totalPages, p + 1))}
+              >
+                Next
+              </Button>
             </div>
+          )}
+        </div>
+      )}
+
+      {/* Resolution Confirmation Modal */}
+      <Dialog
+        isOpen={Boolean(activeReportId && resolutionTarget)}
+        onClose={handleCloseConfirm}
+        title={
+          resolutionTarget === 'REMOVED'
+            ? 'Confirm Permanent Removal'
+            : 'Dismiss Report & Clear Flag'
+        }
+      >
+        <p className="text-xs leading-relaxed text-gray-600 dark:text-gray-400">
+          {resolutionTarget === 'REMOVED' ? (
+            <>
+              You are about to permanently remove this listing from the public directory. It will no
+              longer appear in search results, and users will not be able to interact with it.
+            </>
+          ) : (
+            <>
+              You are about to dismiss this user flag. The listing will remain active and the{' '}
+              <strong className="text-amber-600">Under Review</strong> notice will be cleared.
+            </>
+          )}
+        </p>
+
+        {actionError && (
+          <div
+            role="alert"
+            className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-semibold text-red-700 dark:border-red-800 dark:bg-red-950/60 dark:text-red-300"
+          >
+            {actionError}
           </div>
         )}
-      </div>
+
+        <div className="mt-6 flex justify-end gap-3">
+          <Button
+            type="button"
+            variant="secondary"
+            size="md"
+            disabled={resolveMutation.isPending}
+            onClick={handleCloseConfirm}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            variant={resolutionTarget === 'REMOVED' ? 'danger' : 'primary'}
+            size="md"
+            loading={resolveMutation.isPending}
+            onClick={handleExecuteResolution}
+          >
+            {resolutionTarget === 'REMOVED' ? 'Remove Listing' : 'Dismiss Flag'}
+          </Button>
+        </div>
+      </Dialog>
     </div>
   );
 }
