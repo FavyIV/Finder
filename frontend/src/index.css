@@ -1,3 +1,84 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    @apply bg-gray-50 text-gray-900;
+  }
+
+  :root {
+    --color-status-available-bg: #dcfce7;
+    --color-status-available-fg: #15803d;
+    --color-status-available-dot: #16a34a;
+    --color-status-claimed-bg: #f1f5f9;
+    --color-status-claimed-fg: #475569;
+    --color-status-claimed-dot: #64748b;
+    --color-status-expired-bg: #f3f4f6;
+    --color-status-expired-fg: #6b7280;
+    --color-status-expired-dot: #9ca3af;
+    --color-status-review-bg: #fef9c3;
+    --color-status-review-fg: #a16207;
+    --color-status-review-dot: #ca8a04;
+  }
+}
+
+@layer components {
+  /* Skeleton shimmer utility */
+  .skeleton {
+    background: linear-gradient(
+      90deg,
+      theme('colors.gray.200') 25%,
+      theme('colors.gray.100') 50%,
+      theme('colors.gray.200') 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite linear;
+    border-radius: theme('borderRadius.lg');
+  }
+
+  /* Focus ring utility — apply to interactive elements */
+  .focus-ring {
+    @apply focus-visible:ring-brand-500 outline-none focus-visible:ring-2 focus-visible:ring-offset-2;
+  }
+
+  /* Card base */
+  .card {
+    @apply shadow-card rounded-2xl border border-gray-100 bg-white;
+  }
+}
+
+/* Dark mode overrides */
+.dark body {
+  @apply bg-gray-950 text-gray-100;
+}
+
+.dark .card {
+  @apply border-gray-800 bg-gray-900;
+}
+
+.dark .skeleton {
+  background: linear-gradient(
+    90deg,
+    theme('colors.gray.800') 25%,
+    theme('colors.gray.700') 50%,
+    theme('colors.gray.800') 75%
+  );
+  background-size: 200% 100%;
+}
