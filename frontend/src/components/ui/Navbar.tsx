@@ -46,10 +46,7 @@ export function Navbar({ isDark, onToggleDark }: NavbarProps): ReactElement {
             </span>
             <div className="flex flex-col">
               <span className="text-base font-bold leading-none tracking-tight text-gray-900 dark:text-gray-100">
-                Campus L&amp;F
-              </span>
-              <span className="text-[10px] font-medium leading-tight text-gray-500 dark:text-gray-400">
-                FUTA Recovery Portal
+                Finder
               </span>
             </div>
           </Link>
